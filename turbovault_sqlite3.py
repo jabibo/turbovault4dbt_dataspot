@@ -17,10 +17,11 @@ image_path = os.path.join(os.path.dirname(__file__), "images")
 
 
 def connect_sqlite():
-    conn = sqlite3.connect("dataspotparameters.db")
-    cursor = conn.cursor()
     config = ConfigParser()
     config.read(os.path.join(os.path.dirname(__file__), "config.ini"))
+    db_path = config.get("sqlite3", "db_path")
+    conn = sqlite3.connect(os.path.join(db_path, "dataspotparameters.db"))
+    cursor = conn.cursor()
 
     sql_source_data = "SELECT * FROM source_data"
     df_source_data = pd.read_sql_query(sql_source_data, conn)
@@ -45,7 +46,7 @@ def connect_sqlite():
         "link_satellites": df_link_satellites,
     }
 
-    db = sqlite3.connect(":memory:")
+    db = sqlite3.connect(':memory:')
 
     for table, df in dfs.items():
         df.to_sql(table, db)
@@ -70,16 +71,16 @@ def main():
     model_path = config.get("sqlite3", "model_path")
     hashdiff_naming = config.get("sqlite3", "hashdiff_naming")
 
-    sqlite_cursor = connect_sqlite()
+    cursor = connect_sqlite()
 
-    sqlite_cursor.execute("SELECT DISTINCT SOURCE_SYSTEM || '_' || SOURCE_OBJECT FROM source_data")
-    results = sqlite_cursor.fetchall()
+    cursor.execute("SELECT DISTINCT SOURCE_SYSTEM || '_' || SOURCE_OBJECT FROM source_data")
+    results = cursor.fetchall()
     available_sources = []
 
     
     for row in results:
         available_sources.append(row[0])
-        
+
     generated_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     parser = GooeyParser(description="Config")
@@ -113,9 +114,6 @@ def main():
     rdv_default_schema = "rdv"
     stage_default_schema = "stage"
 
-    conn = sqlite3.connect("dataspotparameters.db")
-    cursor = conn.cursor()
-
     for source in args.Sources[0]:
         if "Stage" in todo:
             stage.generate_stage(cursor,source, generated_timestamp, stage_default_schema, model_path, hashdiff_naming)
@@ -130,8 +128,6 @@ def main():
             satellite.generate_satellite(cursor, source, generated_timestamp, rdv_default_schema, model_path, hashdiff_naming)
 
     cursor.close()
-    conn.close()
-
 
 if __name__ == "__main__":
     print("Starting Script.")
