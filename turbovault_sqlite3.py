@@ -72,8 +72,14 @@ def main():
 
     sqlite_cursor = connect_sqlite()
 
-    available_sources = list(sqlite_cursor.execute("SELECT DISTINCT SOURCE_SYSTEM FROM source_data"))
+    sqlite_cursor.execute("SELECT DISTINCT SOURCE_SYSTEM || '_' || SOURCE_OBJECT FROM source_data")
+    results = sqlite_cursor.fetchall()
+    available_sources = []
 
+    
+    for row in results:
+        available_sources.append(row[0])
+        
     generated_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     parser = GooeyParser(description="Config")
