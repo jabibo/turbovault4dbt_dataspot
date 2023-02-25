@@ -52,15 +52,15 @@ def generate_satellite(cursor,source, generated_timestamp, rdv_default_schema, m
     satellite_list = generate_satellite_list(cursor=cursor, source=source)
 
     source_name, source_object = source.split("_")
-    model_path_v0 = model_path.replace('@@entitytype','Satellites_v0').replace('@@SourceSystem',source_name)
-    model_path_v1 = model_path.replace('@@entitytype','Satellites_v1').replace('@@SourceSystem',source_name)
+    model_path_v0 = model_path.replace('@@entitytype','dwh_04_rv').replace('@@SourceSystem',source_name)
+    model_path_v1 = model_path.replace('@@entitytype','dwh_04_rv').replace('@@SourceSystem',source_name)
 
     for satellite in satellite_list:
         satellite_name = satellite[1]
         hashkey_column = satellite[2]
         hashdiff_column = hashdiff_naming.replace('@@SatName',satellite_name)
         payload_list = satellite[3].split(',')
-        source_model = satellite[4].lower()
+        source_model = satellite[4].lower().replace('load', 'stg')
         loaddate = satellite[5]
 
         payload = gen_payload(payload_list)
@@ -73,7 +73,9 @@ def generate_satellite(cursor,source, generated_timestamp, rdv_default_schema, m
             
   
         satellite_model_name_splitted_list = satellite_name.split('_')
+        print(satellite_model_name_splitted_list)
         satellite_model_name_splitted_list[-2] += '0'
+        print(satellite_model_name_splitted_list[-2])
         satellite_model_name_v0 = '_'.join(satellite_model_name_splitted_list)
 
         filename = os.path.join(model_path_v0, generated_timestamp , f"{satellite_model_name_v0}.sql")

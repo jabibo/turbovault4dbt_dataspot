@@ -106,7 +106,8 @@ def main():
     args = parser.parse_args()
 
     try:
-        todo = args.Tasks[0]
+        todo = args.Tasks[4]
+
     except IndexError:
         print("No entities selected.")
         todo = ""
@@ -115,6 +116,7 @@ def main():
     stage_default_schema = "stage"
 
     for source in args.Sources[0]:
+        print(source)
         if "Stage" in todo:
             stage.generate_stage(cursor,source, generated_timestamp, stage_default_schema, model_path, hashdiff_naming)
         

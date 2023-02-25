@@ -26,9 +26,9 @@ def generate_source_models(cursor, hub_id):
 
     command = ""
 
-    query = f"""SELECT Source_Table_Physical_Name,GROUP_CONCAT(Source_Column_Physical_Name),Static_Part_of_Record_Source_Column
+    query = f"""SELECT Source_Table_Physical_Name,GROUP_CONCAT(business_key_physical_name),Static_Part_of_Record_Source_Column
                 FROM 
-                (SELECT src.Source_Table_Physical_Name,h.Source_Column_Physical_Name,src.Static_Part_of_Record_Source_Column FROM hub_entities h
+                (SELECT src.Source_Table_Physical_Name,h.business_key_physical_name,src.Static_Part_of_Record_Source_Column FROM hub_entities h
                 inner join source_data src on h.Source_Table_Identifier = src.Source_table_identifier
                 where 1=1
                 and Hub_Identifier = '{hub_id}'
@@ -80,7 +80,7 @@ def generate_hub(cursor,source, generated_timestamp,rdv_default_schema,model_pat
     hub_list = generate_hub_list(cursor=cursor, source=source)
 
     source_name, source_object = source.split("_")
-    model_path = model_path.replace('@@entitytype','Hub').replace('@@SourceSystem',source_name)
+    model_path = model_path.replace('@@entitytype','dwh_04_rv').replace('@@SourceSystem',source_name)
     for hub in hub_list:
 
         hub_name = hub[1]
@@ -90,7 +90,8 @@ def generate_hub(cursor,source, generated_timestamp,rdv_default_schema,model_pat
         for bk in bk_list:
             bk_string += f"\n\t- '{bk}'"
 
-        source_models = generate_source_models(cursor, hub_id)
+        source_models = generate_source_models(cursor, hub_id).replace('load', 'stg')
+        print(source_models)
         hashkey = generate_hashkey(cursor, hub_id)
     
         with open(os.path.join(".","templates","hub.txt"),"r") as f:

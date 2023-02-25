@@ -90,11 +90,11 @@ def generate_link(cursor, source, generated_timestamp, rdv_default_schema, model
     for fk in fk_list:
       fk_string += f"\n\t- '{fk}'"
 
-    source_models = generate_source_models(cursor, link_id)
+    source_models = generate_source_models(cursor, link_id).replace('load', 'stg')
     link_hashkey = generate_link_hashkey(cursor, link_id)
 
     source_name, source_object = source.split("_")
-    model_path = model_path.replace('@@entitytype','Link').replace('@@SourceSystem',source_name)
+    model_path = model_path.replace('@@entitytype','dwh_04_rv').replace('@@SourceSystem',source_name)
 
 
 

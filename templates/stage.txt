@@ -1,11 +1,14 @@
 {{ config(materialized='view') }}
-{{ config(schema='@@SCHEMA') }}
 
 {%- set yaml_metadata -%}
 source_model: 
-  '@@SourceName': '@@SourceTable'
+  '@@SourceTable'
 hashed_columns:
 @@HashedColumns
+
+derived_columns:
+@@derived_columns
+
 rsrc: '@@RecordSource' 
 ldts: '@@LoadDate'
 include_source_columns: true
@@ -17,6 +20,7 @@ include_source_columns: true
 {{ datavault4dbt.stage(include_source_columns=metadata_dict['include_source_columns'],
                   source_model=metadata_dict['source_model'],
                   hashed_columns=metadata_dict['hashed_columns'],
+                  derived_columns=metadata_dict['derived_columns'],                  
                   rsrc=metadata_dict['rsrc'],
                   ldts=metadata_dict['ldts'],
                   prejoined_columns=metadata_dict['prejoined_columns']) }}

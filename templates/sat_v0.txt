@@ -1,5 +1,4 @@
-{{ config(schema='@@Schema',
-           materialized='incremental',
+{{ config(materialized='incremental',
            unique_key=['@@Hashkey', 'ldts']) }} 
 
 {%- set yaml_metadata -%}

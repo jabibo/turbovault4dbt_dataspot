@@ -24,7 +24,6 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
               WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
               ORDER BY l.Target_Column_Sort_Order)
               group by Target_Primary_Key_Physical_Name
-              
               UNION ALL
               SELECT Target_Satellite_Table_Physical_Name,GROUP_CONCAT(Source_Column_Physical_Name),IS_SATELLITE FROM 
               (SELECT '{hashdiff_naming.replace("@@SatName", "")}' || s.Target_Satellite_Table_Physical_Name as Target_Satellite_Table_Physical_Name,s.Source_Column_Physical_Name,TRUE as IS_SATELLITE
@@ -61,6 +60,52 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
     else:
       for bk in bk_list:
         command = command + f"\t\t- {bk}\n"
+
+  return command
+
+def gen_derived_columns(cursor,source):
+  
+  command = ""
+
+  source_name, source_object = source.split("_")
+
+  query = f"""
+              SELECT 
+              source_column_physical_name 
+              , target_column_physical_name  
+              FROM hub_satellites s
+              inner join source_data src on s.Source_Table_Identifier = src.Source_table_identifier
+              WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
+              and source_column_physical_name<>target_column_physical_name
+              union all
+              SELECT 
+              source_column_physical_name 
+              , target_column_physical_name  
+              FROM link_satellites s
+              inner join source_data src on s.Source_Table_Identifier = src.Source_table_identifier
+              WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
+              and source_column_physical_name<>target_column_physical_name
+              union all
+              SELECT 
+              source_column_physical_name 
+              , business_key_physical_name   
+              FROM hub_entities s
+              inner join source_data src on s.Source_Table_Identifier = src.Source_table_identifier
+              WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
+              and source_column_physical_name<>business_key_physical_name              
+              """
+  cursor.execute(query)
+  results = cursor.fetchall()
+
+  for source_column_physical_name in results:
+  
+    target_column_name = source_column_physical_name[1]
+    source_column_list = source_column_physical_name[0].split(",")
+
+    command = command + f"\t\t{target_column_name}:\n"
+
+    for source_column in source_column_list:
+        command = command + f"\t\t\tvalue: {source_column}\n"
 
   return command
 
@@ -107,11 +152,14 @@ def gen_prejoin_columns(cursor, source):
 def generate_stage(cursor, source,generated_timestamp,stage_default_schema, model_path,hashdiff_naming):
 
   hashed_columns = gen_hashed_columns(cursor, source, hashdiff_naming)
+
+  derived_columns = gen_derived_columns(cursor, source)
+
   prejoins = gen_prejoin_columns(cursor, source)
 
   source_name, source_object = source.split("_")
   
-  model_path = model_path.replace("@@entitytype", "Stage").replace("@@SourceSystem", source_name)
+  model_path = model_path.replace("@@entitytype", "dwh_03_stage").replace("@@SourceSystem", source_name)
 
   query = f"""SELECT Source_Schema_Physical_Name,Source_Table_Physical_Name, Record_Source_Column, Load_Date_Column  FROM source_data src
                 WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'"""
@@ -122,6 +170,7 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
   for row in sources: #sources usually only has one row
     source_schema_name = row[0]
     source_table_name = row[1]  
+    target_table_name = row[1].replace('load', 'stg') 
     rs = row[2]
     ldts = row[3]
   timestamp = generated_timestamp
@@ -129,9 +178,9 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
   with open(os.path.join(".","templates","stage.txt"),"r") as f:
       command_tmp = f.read()
   f.close()
-  command = command_tmp.replace("@@RecordSource",rs).replace("@@LoadDate",ldts).replace("@@HashedColumns", hashed_columns).replace("@@PrejoinedColumns",prejoins).replace('@@SourceName',source_schema_name).replace('@@SourceTable',source_table_name).replace('@@SCHEMA',stage_default_schema)
+  command = command_tmp.replace("@@RecordSource",rs).replace("@@LoadDate",ldts).replace("@@HashedColumns", hashed_columns).replace("@@derived_columns", derived_columns).replace("@@PrejoinedColumns",prejoins).replace('@@SourceName',source_schema_name).replace('@@SourceTable',source_table_name).replace('@@SCHEMA',stage_default_schema)
 
-  filename = os.path.join(model_path, timestamp , f"{source_table_name.lower()}.sql")
+  filename = os.path.join(model_path, timestamp , f"{target_table_name.lower()}.sql")
           
   path = os.path.join(model_path, timestamp)
 
@@ -145,4 +194,4 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
   with open(filename, 'w') as f:
     f.write(command.expandtabs(2))
 
-  print(f"Created model \'{source_table_name.lower()}.sql\'")
+  print(f"Created model \'{target_table_name.lower()}.sql\'")
