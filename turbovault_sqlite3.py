@@ -4,6 +4,7 @@ from procs.sqlite3 import stage
 from procs.sqlite3 import satellite
 from procs.sqlite3 import hub
 from procs.sqlite3 import link
+from procs.sqlite3 import nh_link
 						  
 import pandas as pd
 import sqlite3
@@ -38,12 +39,16 @@ def connect_sqlite():
     sql_link_satellites = "SELECT * FROM link_satellites"
     df_link_satellites = pd.read_sql_query(sql_link_satellites, conn)
 
+    sql_nh_link_entities = "SELECT * FROM link_entities"
+    df_nh_link_entities = pd.read_sql_query(sql_nh_link_entities, conn)
+
     dfs = {
         "source_data": df_source_data,
         "hub_entities": df_hub_entities,
         "link_entities": df_link_entities,
         "hub_satellites": df_hub_satellites,
         "link_satellites": df_link_satellites,
+        "nh_link_entities": df_nh_link_entities,        
     }
 
     db = sqlite3.connect(':memory:')
@@ -62,6 +67,7 @@ def connect_sqlite():
     default_size=(800, 800),
     advanced=True,
     image_dir=image_path,
+    command_line_args=True
 )
 def main():
 	
@@ -89,19 +95,19 @@ def main():
         help="Select the entities which you want to generate",
         action="append",
         widget="Listbox",
-        choices=["Stage", "Hub", "Satellite", "Link"],
-        default=["Stage", "Hub", "Satellite", "Link"],
+        choices=["Stage", "Hub", "Satellite", "Link", "non_historized_Link"],
+        default=["Stage", "Hub", "Satellite", "Link", "non_historized_Link"],
         nargs="*",
         gooey_options={"height": 300},
     )
     parser.add_argument(
         "--Sources",
+        help="Select the sources which you want to process",
         action="append",
-        nargs="+",
         widget="Listbox",
         choices=available_sources,
+        nargs="+",        
         gooey_options={"height": 300},
-        help="Select the sources which you want to process",
     )
     args = parser.parse_args()
 
@@ -128,6 +134,10 @@ def main():
 
         if 'Satellite' in todo: 
             satellite.generate_satellite(cursor, source, generated_timestamp, rdv_default_schema, model_path, hashdiff_naming)
+
+        if 'non_historized_Link' in todo: 
+            nh_link.generate_nh_link(cursor,source, generated_timestamp, rdv_default_schema, model_path)
+
 
     cursor.close()
 
