@@ -104,10 +104,11 @@ def generate_link(cursor, source, generated_timestamp, rdv_default_schema, model
     f.close()
     command = command_tmp.replace('@@Schema', rdv_default_schema).replace('@@SourceModels', source_models).replace('@@LinkHashkey', link_hashkey).replace('@@ForeignHashkeys', fk_string)
     
+    business_object = link_name.split('_')[0]
 
-    filename = os.path.join(model_path, generated_timestamp , f"{link_name}.sql")
-            
-    path = os.path.join(model_path, generated_timestamp)
+    filename = os.path.join(model_path, business_object,  f"{link_name}.sql")
+
+    path = os.path.join(model_path, business_object)
 
     # Check whether the specified path exists or not
     isExist = os.path.exists(path)

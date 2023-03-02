@@ -13,6 +13,7 @@ from gooey import Gooey
 from gooey import GooeyParser
 from datetime import datetime
 import time
+import argparse
 
 image_path = os.path.join(os.path.dirname(__file__), "images")
 
@@ -39,7 +40,7 @@ def connect_sqlite():
     sql_link_satellites = "SELECT * FROM link_satellites"
     df_link_satellites = pd.read_sql_query(sql_link_satellites, conn)
 
-    sql_nh_link_entities = "SELECT * FROM link_entities"
+    sql_nh_link_entities = "SELECT * FROM nh_link_entities"
     df_nh_link_entities = pd.read_sql_query(sql_nh_link_entities, conn)
 
     dfs = {
@@ -89,30 +90,51 @@ def main():
 
     generated_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
-    parser = GooeyParser(description="Config")
-    parser.add_argument(
-        "--Tasks",
-        help="Select the entities which you want to generate",
-        action="append",
-        widget="Listbox",
-        choices=["Stage", "Hub", "Satellite", "Link", "non_historized_Link"],
-        default=["Stage", "Hub", "Satellite", "Link", "non_historized_Link"],
-        nargs="*",
-        gooey_options={"height": 300},
-    )
-    parser.add_argument(
-        "--Sources",
-        help="Select the sources which you want to process",
-        action="append",
-        widget="Listbox",
-        choices=available_sources,
-        nargs="+",        
-        gooey_options={"height": 300},
-    )
-    args = parser.parse_args()
+    # Set default values for the arguments
+    default_tasks = ["Stage", "Hub", "Satellite", "Link", "non_historized_Link"]
+    default_sources = [["webshop_lieferung"]]
 
+
+    # Set a flag to indicate whether to use Gooey or not
+    use_gooey = True
+
+    # Check if the program is running in debug mode
+    if not use_gooey:
+
+        # Use default values for the arguments
+        class Args:
+            Tasks = default_tasks
+            Sources = default_sources
+        
+        args = Args()
+
+    else:
+
+        parser = GooeyParser(description="Config")
+        parser.add_argument(
+            "--Tasks",
+            help="Select the entities which you want to generate",
+            action="append",
+            widget="Listbox",
+            choices=["Stage", "Hub", "Satellite", "Link", "non_historized_Link"],
+            default=default_tasks,
+            nargs="*",
+            gooey_options={"height": 300},
+        )
+        parser.add_argument(
+            "--Sources",
+            help="Select the sources which you want to process",
+            action="append",
+            widget="Listbox",
+            choices=available_sources,
+            nargs="+",        
+            gooey_options={"height": 300},
+        )
+        args = parser.parse_args()
+        
+        
     try:
-        todo = args.Tasks[4]
+        todo = args.Tasks
 
     except IndexError:
         print("No entities selected.")
@@ -122,7 +144,6 @@ def main():
     stage_default_schema = "stage"
 
     for source in args.Sources[0]:
-        print(source)
         if "Stage" in todo:
             stage.generate_stage(cursor,source, generated_timestamp, stage_default_schema, model_path, hashdiff_naming)
         

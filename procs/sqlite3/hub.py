@@ -6,7 +6,7 @@ def generate_hub_list(cursor, source):
 
     query = f"""SELECT Hub_Identifier,Target_Hub_table_physical_name,GROUP_CONCAT(Business_Key_Physical_Name)  
                 from 
-                (SELECT h.Hub_Identifier,h.Target_Hub_table_physical_name,(Business_Key_Physical_Name)  FROM hub_entities h
+                (SELECT distinct h.Hub_Identifier,h.Target_Hub_table_physical_name,(Business_Key_Physical_Name)  FROM hub_entities h
                 inner join source_data src on src.Source_table_identifier = h.Source_Table_Identifier
                 where 1=1
                 and src.Source_System = '{source_name}'
@@ -28,7 +28,7 @@ def generate_source_models(cursor, hub_id):
 
     query = f"""SELECT Source_Table_Physical_Name,GROUP_CONCAT(business_key_physical_name),Static_Part_of_Record_Source_Column
                 FROM 
-                (SELECT src.Source_Table_Physical_Name,h.business_key_physical_name,src.Static_Part_of_Record_Source_Column FROM hub_entities h
+                (SELECT distinct src.Source_Table_Physical_Name,h.business_key_physical_name,src.Static_Part_of_Record_Source_Column FROM hub_entities h
                 inner join source_data src on h.Source_Table_Identifier = src.Source_table_identifier
                 where 1=1
                 and Hub_Identifier = '{hub_id}'
@@ -91,7 +91,7 @@ def generate_hub(cursor,source, generated_timestamp,rdv_default_schema,model_pat
             bk_string += f"\n\t- '{bk}'"
 
         source_models = generate_source_models(cursor, hub_id).replace('load', 'stg')
-        print(source_models)
+
         hashkey = generate_hashkey(cursor, hub_id)
     
         with open(os.path.join(".","templates","hub.txt"),"r") as f:
@@ -99,10 +99,11 @@ def generate_hub(cursor,source, generated_timestamp,rdv_default_schema,model_pat
         f.close()
         command = command_tmp.replace('@@Schema', rdv_default_schema).replace('@@SourceModels', source_models).replace('@@Hashkey', hashkey).replace('@@BusinessKeys', bk_string)
            
+        business_object = hub_name.split('_')[0]
 
-        filename = os.path.join(model_path, generated_timestamp , f"{hub_name}.sql")
+        filename = os.path.join(model_path , business_object, f"{hub_name}.sql")
                 
-        path = os.path.join(model_path, generated_timestamp)
+        path = os.path.join(model_path, business_object)
 
         # Check whether the specified path exists or not
         isExist = os.path.exists(path)

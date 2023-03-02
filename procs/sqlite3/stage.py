@@ -25,6 +25,14 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
               ORDER BY l.Target_Column_Sort_Order)
               group by Target_Primary_Key_Physical_Name
               UNION ALL
+              SELECT link_primary_key_physical_name, GROUP_CONCAT(Source_Column_Physical_Name), IS_SATELLITE FROM
+              (SELECT l.link_primary_key_physical_name, l.Source_Column_Physical_Name,FALSE as IS_SATELLITE
+              FROM nh_link_entities l
+              inner join source_data src on l.Source_Table_Identifier = src.Source_table_identifier
+              WHERE l.title ='BK' and src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
+              ORDER BY l.Target_Column_Sort_Order)
+              group by link_primary_key_physical_name              
+              UNION ALL
               SELECT Target_Satellite_Table_Physical_Name,GROUP_CONCAT(Source_Column_Physical_Name),IS_SATELLITE FROM 
               (SELECT '{hashdiff_naming.replace("@@SatName", "")}' || s.Target_Satellite_Table_Physical_Name as Target_Satellite_Table_Physical_Name,s.Source_Column_Physical_Name,TRUE as IS_SATELLITE
               FROM hub_satellites s
@@ -70,9 +78,14 @@ def gen_derived_columns(cursor,source):
   source_name, source_object = source.split("_")
 
   query = f"""
+                SELECT 
+              group_concat(source_column_physical_name), target_column_physical_name, transformation_rule  
+              from
+              (              
               SELECT 
               source_column_physical_name 
-              , target_column_physical_name  
+              , target_column_physical_name
+              , False as transformation_rule
               FROM hub_satellites s
               inner join source_data src on s.Source_Table_Identifier = src.Source_table_identifier
               WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
@@ -81,32 +94,44 @@ def gen_derived_columns(cursor,source):
               SELECT 
               source_column_physical_name 
               , target_column_physical_name  
+              , False as transformation_rule              
               FROM link_satellites s
               inner join source_data src on s.Source_Table_Identifier = src.Source_table_identifier
               WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
               and source_column_physical_name<>target_column_physical_name
               union all
-              SELECT 
-              source_column_physical_name 
-              , business_key_physical_name   
+              SELECT distinct
+              case when transformation_rule<>''
+                     then transformation_rule
+                     else source_column_physical_name end as source_column_physical_name
+              , business_key_physical_name 
+              , case when transformation_rule<>''
+                     then True
+                     else False end as transformation_rule
               FROM hub_entities s
               inner join source_data src on s.Source_Table_Identifier = src.Source_table_identifier
               WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
-              and source_column_physical_name<>business_key_physical_name              
+              and source_column_physical_name<>business_key_physical_name
+              )
+              group by target_column_physical_name                          
               """
   cursor.execute(query)
   results = cursor.fetchall()
-
-  for source_column_physical_name in results:
-  
-    target_column_name = source_column_physical_name[1]
-    source_column_list = source_column_physical_name[0].split(",")
-
+  for derived_columns in results:
+    target_column_name = derived_columns[1]
+    transformation_rule = derived_columns[2]
     command = command + f"\t\t{target_column_name}:\n"
-
-    for source_column in source_column_list:
-        command = command + f"\t\t\tvalue: {source_column}\n"
-
+    if transformation_rule:
+      source_column_list = derived_columns[0]
+      command = command + f"\t\t\tvalue: {source_column_list}"      
+    else:
+      source_column_list = derived_columns[0].split(",")
+      for i, source_column in enumerate(source_column_list):
+          if i == 0:
+            command = command + f"\t\t\tvalue: {source_column}"
+          else:
+            command += f"||'_'||{source_column}"
+    command = command + f"\n\t\t\tdatatype: 'VARCHAR'\n"
   return command
 
 
@@ -180,10 +205,11 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
   f.close()
   command = command_tmp.replace("@@RecordSource",rs).replace("@@LoadDate",ldts).replace("@@HashedColumns", hashed_columns).replace("@@derived_columns", derived_columns).replace("@@PrejoinedColumns",prejoins).replace('@@SourceName',source_schema_name).replace('@@SourceTable',source_table_name).replace('@@SCHEMA',stage_default_schema)
 
-  filename = os.path.join(model_path, timestamp , f"{target_table_name.lower()}.sql")
-          
-  path = os.path.join(model_path, timestamp)
+  business_object = target_table_name.split('_')[2]      
 
+  filename = os.path.join(model_path , business_object, f"{target_table_name.lower()}.sql")
+
+  path =os.path.join(model_path, business_object)
 
   # Check whether the specified path exists or not
   isExist = os.path.exists(path)

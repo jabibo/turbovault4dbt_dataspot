@@ -19,7 +19,7 @@ def generate_satellite_list(cursor, source):
                 (SELECT DISTINCT hs.Satellite_Identifier,hs.Target_Satellite_Table_Physical_Name,hs.Hub_Primary_Key_Physical_Name,hs.Target_Column_Physical_Name,
                 src.Source_Table_Physical_Name,src.Load_Date_Column FROM hub_satellites hs
                 inner join source_data src on src.Source_table_identifier = hs.Source_Table_Identifier
-                where 1=1
+                where hs.nh_link is null -- it is no non-historized link
                 and src.Source_System = '{source_name}'
                 and src.Source_Object = '{source_object}'
                 order by Target_Column_Sort_Order asc)
@@ -73,14 +73,16 @@ def generate_satellite(cursor,source, generated_timestamp, rdv_default_schema, m
             
   
         satellite_model_name_splitted_list = satellite_name.split('_')
-        print(satellite_model_name_splitted_list)
+
         satellite_model_name_splitted_list[-2] += '0'
-        print(satellite_model_name_splitted_list[-2])
+
         satellite_model_name_v0 = '_'.join(satellite_model_name_splitted_list)
 
-        filename = os.path.join(model_path_v0, generated_timestamp , f"{satellite_model_name_v0}.sql")
+        business_object = satellite_name.split('_')[0]        
+
+        filename = os.path.join(model_path_v0 , business_object, f"{satellite_model_name_v0}.sql")
                 
-        path = os.path.join(model_path_v0, generated_timestamp)
+        path = os.path.join(model_path_v0, business_object)
 
         # Check whether the specified path exists or not
         isExist = os.path.exists(path)
@@ -99,11 +101,9 @@ def generate_satellite(cursor,source, generated_timestamp, rdv_default_schema, m
         f.close()
         command_v1 = command_tmp.replace('@@SatName', satellite_model_name_v0).replace('@@Hashkey', hashkey_column).replace('@@Hashdiff', hashdiff_column).replace('@@LoadDate', loaddate).replace('@@Schema', rdv_default_schema)
             
-  
-
-        filename_v1 = os.path.join(model_path_v1, generated_timestamp , f"{satellite_name}.sql")
+        filename_v1 = os.path.join(model_path_v1 , business_object,  f"{satellite_name}.sql")
                 
-        path_v1 = os.path.join(model_path_v1, generated_timestamp)
+        path_v1 = os.path.join(model_path_v1, business_object)
 
         # Check whether the specified path exists or not
         isExist_v1 = os.path.exists(path_v1)
