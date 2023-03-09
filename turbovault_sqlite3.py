@@ -5,6 +5,7 @@ from procs.sqlite3 import satellite
 from procs.sqlite3 import hub
 from procs.sqlite3 import link
 from procs.sqlite3 import nh_link
+from procs.sqlite3 import st_satellite
 						  
 import pandas as pd
 import sqlite3
@@ -91,12 +92,12 @@ def main():
     generated_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     # Set default values for the arguments
-    default_tasks = ["Stage", "Hub", "Satellite", "Link", "non_historized_Link"]
-    default_sources = [["webshop_lieferung"]]
+    default_tasks = [["Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite"]]
+    default_sources = [['webshop_vereinspartner', 'webshop_kunde', 'roadshow_bestellung', 'webshop_bestellung', 'webshop_lieferadresse', 'webshop_lieferung', 'webshop_lieferdienst', 'webshop_wohnort', 'webshop_position', 'webshop_produkt', 'webshop_produktkategorie']]
 
 
     # Set a flag to indicate whether to use Gooey or not
-    use_gooey = True
+    use_gooey = False
 
     # Check if the program is running in debug mode
     if not use_gooey:
@@ -116,8 +117,8 @@ def main():
             help="Select the entities which you want to generate",
             action="append",
             widget="Listbox",
-            choices=["Stage", "Hub", "Satellite", "Link", "non_historized_Link"],
-            default=default_tasks,
+            choices=["Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite"],
+            default=default_tasks,            
             nargs="*",
             gooey_options={"height": 300},
         )
@@ -132,14 +133,13 @@ def main():
         )
         args = parser.parse_args()
         
-        
+    print(args.Tasks[0])    
     try:
-        todo = args.Tasks
+        todo = args.Tasks[0]
 
     except IndexError:
         print("No entities selected.")
         todo = ""
-
     rdv_default_schema = "rdv"
     stage_default_schema = "stage"
 
@@ -149,7 +149,10 @@ def main():
         
         if 'Hub' in todo: 
             hub.generate_hub(cursor,source, generated_timestamp, rdv_default_schema, model_path)
-    
+            
+        if 'Status_Tracking_Satellite' in todo:
+            st_satellite.generate_st_satellite(cursor, source, generated_timestamp, rdv_default_schema, model_path, hashdiff_naming)            
+
         if 'Link' in todo: 
             link.generate_link(cursor,source, generated_timestamp, rdv_default_schema, model_path)
 

@@ -43,7 +43,7 @@ def generate_nh_link_list(cursor, source):
                 from 
                 (
                   SELECT distinct Link_Identifier,Target_link_table_physical_name, Target_column_physical_name from nh_link_entities
-                  where source_table_identifier ='{source}' and title='BK'                
+                  where source_table_identifier ='{source}' and identifying = True             
                 ) 
                 group by Link_Identifier,Target_link_table_physical_name
                 """
@@ -72,7 +72,7 @@ def generate_payload_list(cursor, source):
     query = f"""SELECT 
                 Link_Identifier,Target_link_table_physical_name,GROUP_CONCAT(Target_column_physical_name)
                 from nh_link_entities
-                where source_table_identifier ='{source}' and title<>'BK'
+                where source_table_identifier ='{source}' and identifying = False
                 group by Link_Identifier,Target_link_table_physical_name
                 """
 

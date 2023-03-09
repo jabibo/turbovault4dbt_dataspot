@@ -30,7 +30,8 @@ def generate_satellite_list(cursor, source):
                 (SELECT DISTINCT hs.Satellite_Identifier,hs.Target_Satellite_Table_Physical_Name,hs.Hub_Primary_Key_Physical_Name,hs.Target_Column_Physical_Name,
                 src.Source_Table_Physical_Name,src.Load_Date_Column FROM hub_satellites hs
                 inner join source_data src on src.Source_table_identifier = hs.Source_Table_Identifier
-                where hs.ma_attribute is false -- it is no multiactive attribute
+                where hs.nh_link is null -- it is no non-historized link
+                and hs.ma_attribute is false -- it is no multiactive attribute
                 and src.Source_System = '{source_name}'
                 and src.Source_Object = '{source_object}'
                 order by Target_Column_Sort_Order asc)
@@ -67,7 +68,8 @@ def generate_satellite_ma_list(cursor, source):
                 (SELECT DISTINCT hs.Satellite_Identifier,hs.Target_Satellite_Table_Physical_Name,hs.Hub_Primary_Key_Physical_Name,hs.Target_Column_Physical_Name,
                 src.Source_Table_Physical_Name,src.Load_Date_Column FROM hub_satellites hs
                 inner join source_data src on src.Source_table_identifier = hs.Source_Table_Identifier
-                where hs.ma_attribute is TRUE -- it is a multiactive attribute
+                where hs.nh_link is null -- it is no non-historized link
+                and hs.ma_attribute is TRUE -- it is a multiactive attribute
                 and src.Source_System = '{source_name}'
                 and src.Source_Object = '{source_object}'
                 order by Target_Column_Sort_Order asc)
@@ -211,4 +213,4 @@ def generate_satellite(cursor,source, generated_timestamp, rdv_default_schema, m
 
             with open(filename_v1, 'w') as f:
                 f.write(command_v1.expandtabs(2))
-                print(f"Created multi-active Satellite Model {satellite_model_name_v1}")            
+                print(f"Created Satellite Model {satellite_model_name_v1}")            
