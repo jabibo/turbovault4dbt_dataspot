@@ -1,0 +1,20 @@
+version: 2
+sources:
+  - name: @@SourceDatabase
+    database: @@SourceDatabase
+    schema: @@ExternalTableSchema
+    tables:
+      - name: @@ExternalTableName
+        description: @@ExternalTableDescription
+        tags:
+        - external
+
+        external:
+          location: "@@ExternalTableLocation"
+          file_format: "@@ExternalTableFileFormat"
+          auto_refresh: false
+          pattern: "@@ExternalTablePattern"
+          partitions:
+            - name: filenamedate
+              data_type: varchar
+              expression: metadata$filename
