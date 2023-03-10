@@ -10,25 +10,41 @@ def generate_satellite_list(cursor, source):
                 replace(business_key_physical_name, '_bk', '')||'_' || SUBSTRING(source_table_identifier, 1,  instr(source_table_identifier, '_')-1)||'_sts' as satellite_identifier
                 , replace(business_key_physical_name, '_bk', '')||'_' || SUBSTRING(source_table_identifier, 1,  instr(source_table_identifier, '_')-1)||'_sts' as Target_Satellite_Table_Physical_Name
                 , target_primary_key_physical_name hub_primary_key_physical_name
-                , ''
+                , '' payload
                 , source_table_physical_name 
                 , 'ldts' as load_date_column
+                , NULL as driving_key                 
+                , NULL list_fks                
                 from hub_entities he 
                 where source_table_identifier='{source}'
                 and has_statustracking
                 union all
-                SELECT distinct
-                link_identifier||'_'||Source_system||'_sts' as satellite_identifier
-                , link_identifier||'_'||Source_system||'_sts'  as Target_Satellite_Table_Physical_Name
-                , target_primary_key_physical_name hub_primary_key_physical_name
-                ,  ''
-                , source_data.source_table_physical_name 
-                , 'ldts' as load_date_column
-                from link_entities
-                inner join source_data
-                on link_entities.Source_Table_Identifier = source_data.source_table_identifier 
-                where link_entities.source_table_identifier='{source}'
-                and link_entities.has_statustracking
+                SELECT 
+                satellite_identifier
+                , Target_Satellite_Table_Physical_Name
+                , hub_primary_key_physical_name
+                , payload
+                , source_table_physical_name 
+                , load_date_column
+                , driving_key 
+                , list_fks
+                from 
+                (
+	                SELECT distinct
+	                link_identifier||'_'||Source_system||'_sts' as satellite_identifier
+	                , link_identifier||'_'||Source_system||'_sts'  as Target_Satellite_Table_Physical_Name
+	                , target_primary_key_physical_name hub_primary_key_physical_name
+	                ,  '' payload
+	                , source_data.source_table_physical_name 
+	                , 'ldts' as load_date_column
+	                , 'hk_'||driving_key||'_h' as driving_key
+	                , group_concat(target_column_physical_name, ',') list_fks
+	                from link_entities
+	                inner join source_data
+	                on link_entities.Source_Table_Identifier = source_data.source_table_identifier 
+	                where link_entities.source_table_identifier='{source}'
+	                and link_entities.has_statustracking
+	             ) a where satellite_identifier is not null
                 """
 
     cursor.execute(query)
@@ -51,8 +67,17 @@ def generate_st_satellite(cursor,source, generated_timestamp, rdv_default_schema
         payload_list = satellite[3].split(',')
         source_model = satellite[4].lower().replace('load', 'stg')
         loaddate = satellite[5]
+        driving_key = satellite[6]
+        list_secondary_fks =[]
+        fks = satellite[7]
+        if fks is not None:
+            list_fks = fks.split(",")
+            list_secondary_fks = [fks for fks in list_fks if fks != driving_key]
 
-        #Satellite_v0
+        secondary_fks=','.join(list_secondary_fks)
+
+               
+        #st_sat_v0
         with open(os.path.join(".","templates","st_sat_v0.txt"),"r") as f:
             command_tmp = f.read()
         f.close()
@@ -80,9 +105,45 @@ def generate_st_satellite(cursor,source, generated_timestamp, rdv_default_schema
 
         with open(filename, 'w') as f:
             f.write(command_v0.expandtabs(2))
-            print(f"Created Satellite Model {satellite_model_name_v0}")
+            print(f"Created Status Satellite Model {satellite_model_name_v0}")
 
-        #Satellite_v1
+        if driving_key != None:
+            #e_sat_v1
+            with open(os.path.join(".","templates","e_sat_v1.txt"),"r") as f:
+                command_tmp = f.read()
+            f.close()
+            linkname = satellite_name.replace('_sts','_l')
+            command_v0 = command_tmp.replace('@@StsSats', satellite_name).replace('@@LinkHashkey', hashkey_column).replace('@@DrivingKey', driving_key).replace('@@SecondaryFks', secondary_fks).replace('@@LinkName', linkname).replace('@@LoadDate', loaddate)
+                
+
+            satellite_model_name_splitted_list = satellite_name.split('_')
+
+            satellite_model_name_splitted_list.pop()
+            satellite_model_name_splitted_list.append('es')
+
+            satellite_model_name_v0 = '_'.join(satellite_model_name_splitted_list)
+
+            business_object = satellite_name.split('_')[0]        
+
+            filename = os.path.join(model_path_v0 , business_object, f"{satellite_model_name_v0}.sql")
+                    
+            path = os.path.join(model_path_v0, business_object)
+
+            # Check whether the specified path exists or not
+            isExist = os.path.exists(path)
+
+            if not isExist:   
+            # Create a new directory because it does not exist 
+                os.makedirs(path)
+
+            with open(filename, 'w') as f:
+                f.write(command_v0.expandtabs(2))
+                print(f"Created Effectivity Satellite Model {satellite_model_name_v0}")
+
+
+
+
+        #st_sat_v1
         with open(os.path.join(".","templates","st_sat_v1.txt"),"r") as f:
             command_tmp = f.read()
         f.close()
