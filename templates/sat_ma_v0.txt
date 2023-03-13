@@ -1,3 +1,6 @@
+{# template sat_ma_v0 Version:0.1.0 #}
+{# automatically generated based on dataspot#}
+
 {{ config(materialized='incremental',
            unique_key=['@@Hashkey', @@MaKeyUnique, 'ldts']) }}
 
@@ -9,12 +12,16 @@ src_ma_key:
 @@MaKey
 src_payload: 
 @@Payload
+src_edts: 'edts'
 {%- endset -%}
 
 {%- set metadata_dict = fromyaml(yaml_metadata) -%}
+{%- set src_edts = metadata_dict['src_edts'] -%}
 
-{{ datavault4dbt.ma_sat_v0(source_model=metadata_dict['source_model'],
+{{ ma_sat_v0(source_model=metadata_dict['source_model'],
                         parent_hashkey=metadata_dict['parent_hashkey'],
                         src_hashdiff=metadata_dict['src_hashdiff'],
                         src_ma_key=metadata_dict['src_ma_key'],
-                        src_payload=metadata_dict['src_payload']) }}
+                        src_payload=metadata_dict['src_payload']
+                        , src_edts=src_edts
+                        ) }}
