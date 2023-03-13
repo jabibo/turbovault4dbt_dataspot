@@ -111,7 +111,7 @@ def generate_satellite(cursor,source, generated_timestamp, rdv_default_schema, m
     
             satellite_model_name_splitted_list = satellite_name.split('_')
 
-            satellite_model_name_splitted_list[-2] += '0'
+            #satellite_model_name_splitted_list[-2] += '0'
 
             satellite_model_name_v0 = '_'.join(satellite_model_name_splitted_list)
 
@@ -133,25 +133,25 @@ def generate_satellite(cursor,source, generated_timestamp, rdv_default_schema, m
                 print(f"Created Satellite Model {satellite_model_name_v0}")
 
             #Satellite_v1
-            with open(os.path.join(".","templates","sat_v1.txt"),"r") as f:
-                command_tmp = f.read()
-            f.close()
-            command_v1 = command_tmp.replace('@@SatName', satellite_model_name_v0).replace('@@Hashkey', hashkey_column).replace('@@Hashdiff', hashdiff_column).replace('@@LoadDate', loaddate).replace('@@Schema', rdv_default_schema)
+            # with open(os.path.join(".","templates","sat_v1.txt"),"r") as f:
+            #     command_tmp = f.read()
+            # f.close()
+            # command_v1 = command_tmp.replace('@@SatName', satellite_model_name_v0).replace('@@Hashkey', hashkey_column).replace('@@Hashdiff', hashdiff_column).replace('@@LoadDate', loaddate).replace('@@Schema', rdv_default_schema)
                 
-            filename_v1 = os.path.join(model_path_v1 , business_object,  f"{satellite_name}.sql")
+            # filename_v1 = os.path.join(model_path_v1 , business_object,  f"{satellite_name}.sql")
                     
-            path_v1 = os.path.join(model_path_v1, business_object)
+            # path_v1 = os.path.join(model_path_v1, business_object)
 
-            # Check whether the specified path exists or not
-            isExist_v1 = os.path.exists(path_v1)
+            # # Check whether the specified path exists or not
+            # isExist_v1 = os.path.exists(path_v1)
 
-            if not isExist_v1:   
-            # Create a new directory because it does not exist 
-                os.makedirs(path_v1)
+            # if not isExist_v1:   
+            # # Create a new directory because it does not exist 
+            #     os.makedirs(path_v1)
 
-            with open(filename_v1, 'w') as f:
-                f.write(command_v1.expandtabs(2))
-                print(f"Created Satellite Model {satellite_name}")
+            # with open(filename_v1, 'w') as f:
+            #     f.write(command_v1.expandtabs(2))
+            #     print(f"Created Satellite Model {satellite_name}")
                 
         else: # This is a ma Satellite
             print("This is ma Satellite")
@@ -170,11 +170,11 @@ def generate_satellite(cursor,source, generated_timestamp, rdv_default_schema, m
             satellite_model_name_splitted_list[-1] = 'ms'        
             print(satellite_model_name_splitted_list)
             satellite_model_name_v1 = '_'.join(satellite_model_name_splitted_list)
-            satellite_model_name_splitted_list[-2] += '0'
+            #satellite_model_name_splitted_list[-2] += '0'
             print(satellite_model_name_splitted_list)
             #satellite_model_name_splitted_list.insert(-1, 'm')
             satellite_model_name_v0 = '_'.join(satellite_model_name_splitted_list)
-            print(satellite_model_name_v0)
+            
             business_object = satellite_name.split('_')[0]        
 
             filename = os.path.join(model_path_v0 , business_object, f"{satellite_model_name_v0}.sql")
@@ -192,23 +192,23 @@ def generate_satellite(cursor,source, generated_timestamp, rdv_default_schema, m
                 f.write(command_v0.expandtabs(2))
                 print(f"Created Satellite Model {satellite_model_name_v0}")
 
-            #Satellite_v1
-            with open(os.path.join(".","templates","sat_ma_v1.txt"),"r") as f:
-                command_tmp = f.read()
-            f.close()
-            command_v1 = command_tmp.replace('@@SatName', satellite_model_name_v0).replace('@@Hashkey', hashkey_column).replace('@@Hashdiff', hashdiff_column).replace('@@MaKey', ma_key).replace('@@LoadDate', loaddate).replace('@@Schema', rdv_default_schema)
+            # #Satellite_v1
+            # with open(os.path.join(".","templates","sat_ma_v1.txt"),"r") as f:
+            #     command_tmp = f.read()
+            # f.close()
+            # command_v1 = command_tmp.replace('@@SatName', satellite_model_name_v0).replace('@@Hashkey', hashkey_column).replace('@@Hashdiff', hashdiff_column).replace('@@MaKey', ma_key).replace('@@LoadDate', loaddate).replace('@@Schema', rdv_default_schema)
                 
-            filename_v1 = os.path.join(model_path_v1 , business_object,  f"{satellite_model_name_v1}.sql")
+            # filename_v1 = os.path.join(model_path_v1 , business_object,  f"{satellite_model_name_v1}.sql")
                     
-            path_v1 = os.path.join(model_path_v1, business_object)
+            # path_v1 = os.path.join(model_path_v1, business_object)
 
-            # Check whether the specified path exists or not
-            isExist_v1 = os.path.exists(path_v1)
+            # # Check whether the specified path exists or not
+            # isExist_v1 = os.path.exists(path_v1)
 
-            if not isExist_v1:   
-            # Create a new directory because it does not exist 
-                os.makedirs(path_v1)
+            # if not isExist_v1:   
+            # # Create a new directory because it does not exist 
+            #     os.makedirs(path_v1)
 
-            with open(filename_v1, 'w') as f:
-                f.write(command_v1.expandtabs(2))
-                print(f"Created multi-active Satellite Model {satellite_model_name_v1}")            
+            # with open(filename_v1, 'w') as f:
+            #     f.write(command_v1.expandtabs(2))
+            #     print(f"Created multi-active Satellite Model {satellite_model_name_v1}")            

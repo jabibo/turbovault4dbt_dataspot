@@ -14,7 +14,8 @@ def generate_satellite_list(cursor, source):
                 , source_table_physical_name 
                 , 'ldts' as load_date_column
                 , NULL as driving_key                 
-                , NULL list_fks                
+                , NULL list_fks
+                , NULL target_link_table_physical_name
                 from hub_entities he 
                 where source_table_identifier='{source}'
                 and has_statustracking
@@ -28,6 +29,7 @@ def generate_satellite_list(cursor, source):
                 , load_date_column
                 , driving_key 
                 , list_fks
+                , target_link_table_physical_name
                 from 
                 (
 	                SELECT distinct
@@ -39,6 +41,7 @@ def generate_satellite_list(cursor, source):
 	                , 'ldts' as load_date_column
 	                , 'hk_'||driving_key||'_h' as driving_key
 	                , group_concat(target_column_physical_name, ',') list_fks
+	                , target_link_table_physical_name
 	                from link_entities
 	                inner join source_data
 	                on link_entities.Source_Table_Identifier = source_data.source_table_identifier 
@@ -68,6 +71,7 @@ def generate_st_satellite(cursor,source, generated_timestamp, rdv_default_schema
         source_model = satellite[4].lower().replace('load', 'stg')
         loaddate = satellite[5]
         driving_key = satellite[6]
+        esat_link_name = satellite[8]
         list_secondary_fks =[]
         fks = satellite[7]
         if fks is not None:
@@ -86,7 +90,7 @@ def generate_st_satellite(cursor,source, generated_timestamp, rdv_default_schema
 
         satellite_model_name_splitted_list = satellite_name.split('_')
 
-        satellite_model_name_splitted_list[-2] += '0'
+        #satellite_model_name_splitted_list[-2] += '0'
 
         satellite_model_name_v0 = '_'.join(satellite_model_name_splitted_list)
 
@@ -107,13 +111,13 @@ def generate_st_satellite(cursor,source, generated_timestamp, rdv_default_schema
             f.write(command_v0.expandtabs(2))
             print(f"Created Status Satellite Model {satellite_model_name_v0}")
 
+        # Define a effectivity_sat, if a driving_key is available
         if driving_key != None:
             #e_sat_v1
             with open(os.path.join(".","templates","e_sat_v1.txt"),"r") as f:
                 command_tmp = f.read()
             f.close()
-            linkname = satellite_name.replace('_sts','_l')
-            command_v0 = command_tmp.replace('@@StsSats', satellite_name).replace('@@LinkHashkey', hashkey_column).replace('@@DrivingKey', driving_key).replace('@@SecondaryFks', secondary_fks).replace('@@LinkName', linkname).replace('@@LoadDate', loaddate)
+            command_v0 = command_tmp.replace('@@StsSats', satellite_name).replace('@@LinkHashkey', hashkey_column).replace('@@DrivingKey', driving_key).replace('@@SecondaryFks', secondary_fks).replace('@@LinkName', esat_link_name).replace('@@LoadDate', loaddate)
                 
 
             satellite_model_name_splitted_list = satellite_name.split('_')
@@ -121,11 +125,11 @@ def generate_st_satellite(cursor,source, generated_timestamp, rdv_default_schema
             satellite_model_name_splitted_list.pop()
             satellite_model_name_splitted_list.append('es')
 
-            satellite_model_name_v0 = '_'.join(satellite_model_name_splitted_list)
+            satellite_model_name_esat = '_'.join(satellite_model_name_splitted_list)
 
             business_object = satellite_name.split('_')[0]        
 
-            filename = os.path.join(model_path_v0 , business_object, f"{satellite_model_name_v0}.sql")
+            filename = os.path.join(model_path_v0 , business_object, f"{satellite_model_name_esat}.sql")
                     
             path = os.path.join(model_path_v0, business_object)
 
@@ -138,29 +142,27 @@ def generate_st_satellite(cursor,source, generated_timestamp, rdv_default_schema
 
             with open(filename, 'w') as f:
                 f.write(command_v0.expandtabs(2))
-                print(f"Created Effectivity Satellite Model {satellite_model_name_v0}")
+                print(f"Created Effectivity Satellite Model {satellite_model_name_esat}")
 
 
-
-
-        #st_sat_v1
-        with open(os.path.join(".","templates","st_sat_v1.txt"),"r") as f:
-            command_tmp = f.read()
-        f.close()
-        command_v1 = command_tmp.replace('@@SatName', satellite_model_name_v0).replace('@@Hashkey', hashkey_column).replace('@@Hashdiff', hashdiff_column).replace('@@LoadDate', loaddate).replace('@@Schema', rdv_default_schema)
+        # #st_sat_v1
+        # with open(os.path.join(".","templates","st_sat_v1.txt"),"r") as f:
+        #     command_tmp = f.read()
+        # f.close()
+        # command_v1 = command_tmp.replace('@@SatName', satellite_model_name_v0).replace('@@Hashkey', hashkey_column).replace('@@Hashdiff', hashdiff_column).replace('@@LoadDate', loaddate).replace('@@Schema', rdv_default_schema)
             
-        filename_v1 = os.path.join(model_path_v1 , business_object,  f"{satellite_name}.sql")
+        # filename_v1 = os.path.join(model_path_v1 , business_object,  f"{satellite_name}.sql")
                 
-        path_v1 = os.path.join(model_path_v1, business_object)
+        # path_v1 = os.path.join(model_path_v1, business_object)
 
-        # Check whether the specified path exists or not
-        isExist_v1 = os.path.exists(path_v1)
+        # # Check whether the specified path exists or not
+        # isExist_v1 = os.path.exists(path_v1)
 
-        if not isExist_v1:   
-        # Create a new directory because it does not exist 
-            os.makedirs(path_v1)
+        # if not isExist_v1:   
+        # # Create a new directory because it does not exist 
+        #     os.makedirs(path_v1)
 
-        with open(filename_v1, 'w') as f:
-            f.write(command_v1.expandtabs(2))
-            print(f"Created Satellite Model {satellite_name}")
+        # with open(filename_v1, 'w') as f:
+        #     f.write(command_v1.expandtabs(2))
+        #     print(f"Created Satellite Model {satellite_name}")
             

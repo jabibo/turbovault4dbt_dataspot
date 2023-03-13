@@ -97,7 +97,7 @@ def main():
 
 
     # Set a flag to indicate whether to use Gooey or not
-    use_gooey = False
+    use_gooey = True
 
     # Check if the program is running in debug mode
     if not use_gooey:
