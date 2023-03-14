@@ -1,3 +1,6 @@
+{# template link Version:0.1.0 #}
+{# automatically generated based on dataspot#}
+
 {{ config(materialized='incremental') }}
 
 {%- set yaml_metadata -%}

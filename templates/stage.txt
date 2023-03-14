@@ -1,3 +1,6 @@
+{# template stage Version:0.1.0 #}
+{# automatically generated based on dataspot#}
+
 {{ config(materialized='view') }}
 
 {%- set yaml_metadata -%}
@@ -8,6 +11,12 @@ hashed_columns:
 
 derived_columns:
 @@derived_columns
+    cdts:
+      value: {{var("local_timestamp")}}
+      datatype: 'TIMESTAMP'
+    edts:      
+      value: business_date
+      datatype: 'DATE'
 
 rsrc: '@@RecordSource' 
 ldts: '@@LoadDate'

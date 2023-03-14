@@ -194,7 +194,7 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
 
   for row in sources: #sources usually only has one row
     source_schema_name = row[0]
-    source_table_name = row[1]
+    source_table_name = row[1].replace('_ws_', '_webshop_').replace('_rs_', '_roadshow_')
     target_table_name = row[1].replace('load', 'stg') 
     rs = row[2]
     ldts = row[3]
