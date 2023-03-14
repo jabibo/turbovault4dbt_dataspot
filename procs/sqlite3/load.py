@@ -2,101 +2,163 @@ import codecs
 from datetime import datetime
 import os
 
-def generate_load_attributes(cursor, source,model_path):
-  source_name, source_object = source.split("_")
+def add_payload(payload_string, key, value):
+    if key != "" and value != "":
+      value = str(value).strip(' ')
+      key = str(key).strip(' ')
+      payload_string = payload_string + f'{key}: {value}\n'
+    
+    return payload_string
+
+def generate_load_table_attributes(cursor, source_short ,source_table_name, selection):
+  #print(source_short + '-' + source_table_name + '-' + selection)
   query = f"""SELECT 
-                  source_name
-                , dbtSourceName
-                , ExternalTablePattern
-                , ExternalTableFileFormat
-                , ExternalTableSchema
-                , ExternalTableLocation
-                , SourceDatabase
-                , ExternalTableDescription
-                , ExternalTableName
+                     source_short
+                   , source_table_name
+                   , attribute_name
+                   , DataType
+                   , format
+                   , source_column_number
+                   , type_check
+                   , decimal_separator
+                   , value
+              FROM load_table_attributes
+              WHERE source_short = '{source_short}' 
+              and source_table_name = '{source_table_name}'
+              and selection = '{selection}'
+              order by source_short, source_table_name, source_column_number
+"""           
+  cursor.execute(query)
+  source_attributes = cursor.fetchall()
+  attributes = selection + ":\n"
+  tab = "  "
+  
+  for row in source_attributes:
+    attributes = attributes  + tab*2 + row[2] + ":\n"
+    attributes = add_payload(attributes + tab*3 , 'data_type', row[3])
+    if row[4] != "":
+      attributes = add_payload(attributes + tab*3 , 'format', row[4])
+    if row[5] >= '0':
+      attributes = add_payload(attributes + tab*3 , 'source_column_number', row[5])
+    if row[7] != "":
+      attributes = add_payload(attributes + tab*3 , 'decimal_separator', row[7])
+    type_check = 'True' if row[6].lower()=='1' else 'False'
+    if type_check == 'True':
+      attributes = add_payload(attributes + tab*3 , 'type_check', type_check)
+    if row[8] != "":
+      attributes = add_payload(attributes + tab*3 , 'value', row[8])
+
+
+  return attributes
+   
+
+def generate_load(cursor, source, model_path):
+  source_short, source_object = source.split("_")
+  #print("generate: " + source)
+  query = f"""SELECT 
+                  source_short
+                , source_table_name
+                , source_database
+                , dbt_source_name
+                , is_hwm
+                , dub_check
+                , key_check
                 , source_type
-              FROM landing_zone
-              WHERE source_name = '{source_name}' 
+                , target_table_name
+                , materialization
+                , pre_hook
+                , post_hook
+                , source_table_name_long
+              FROM load_tables
+              WHERE source_short = '{source_short}' 
               and source_table_name = '{source_object}'"""
   
   cursor.execute(query)
   sources = cursor.fetchall()
-  for row in sources: #sources usually only has one row
-    if row[9] == 'snowflake_external_table':
-      generate_snowflake_external_table( source_name  
-                                        , model_path
-                                        , row[2]
-                                        , row[3]
-                                        , row[4]
-                                        , row[5]
-                                        , row[6]
-                                        , row[7]
-                                        , row[8]
-                                        , )
+  columns = ''
+  additional_columns = ''
+  default_columns = ''
+
+  for row in sources: 
+    columns = generate_load_table_attributes( 
+                      cursor=cursor
+                    , source_short =source_short
+                    , source_table_name = row[1]
+                    , selection='columns'
+                   )
+    additional_columns = generate_load_table_attributes( 
+                      cursor=cursor
+                    , source_short =source_short
+                    , source_table_name = row[1]
+                    , selection='additional_columns'
+                   )
+    default_columns = generate_load_table_attributes( 
+                      cursor=cursor
+                    , source_short =source_short
+                    , source_table_name = row[1]
+                    , selection='default_columns'
+                   )
+    #print("default_columns:" + default_columns)
+    generate_load_sql( 
+                    source_short  
+                  , model_path
+                  , source_table_name=row[1]
+                  , source_database=row[2]
+                  , dbt_source_name=row[3]
+                  , is_hwm=row[4]
+                  , dub_check=row[5]
+                  , key_check=row[6]
+                  , source_type=row[7]
+                  , columns=columns
+                  , default_columns=default_columns
+                  , additional_columns=additional_columns 
+                  , target_table_name=row[8]
+                  , materialization=row[9]
+                  , pre_hook=row[10]
+                  , post_hook=row[11]
+                  , source_table_name_long=row[12]
+
+)
 
 
+def generate_load_sql(    
+                     source_name
+                    , model_path
+                    , source_table_name
+                    , source_database
+                    , dbt_source_name
+                    , is_hwm
+                    , dub_check
+                    , key_check
+                    , source_type
+                    , columns
+                    , default_columns
+                    , additional_columns
+                    , target_table_name
+                    , materialization
+                    , pre_hook
+                    , post_hook
+                    , source_table_name_long):
+  model_path = model_path.replace("@@entitytype", "dwh_02_load").replace("@@SourceSystem", source_name)
 
-def generate_load(cursor, source,model_path):
-  source_name, source_object = source.split("_")
-  query = f"""SELECT 
-                  source_name
-                , dbtSourceName
-                , ExternalTablePattern
-                , ExternalTableFileFormat
-                , ExternalTableSchema
-                , ExternalTableLocation
-                , SourceDatabase
-                , ExternalTableDescription
-                , ExternalTableName
-                , source_type
-              FROM landing_zone
-              WHERE source_name = '{source_name}' 
-              and source_table_name = '{source_object}'"""
-  
-  cursor.execute(query)
-  sources = cursor.fetchall()
-  for row in sources: #sources usually only has one row
-    if row[9] == 'snowflake_external_table':
-      generate_snowflake_external_table( source_name  
-                                        , model_path
-                                        , row[2]
-                                        , row[3]
-                                        , row[4]
-                                        , row[5]
-                                        , row[6]
-                                        , row[7]
-                                        , row[8]
-                                        , )
-
-
-def generate_snowflake_external_table(  source_name
-                                      , model_path
-                                      , ExternalTablePattern
-                                      , ExternalTableFileFormat
-                                      , ExternalTableSchema
-                                      , ExternalTableLocation
-                                      , SourceDatabase
-                                      , ExternalTableDescription
-                                      , ExternalTableName
-                                      , ):
-  model_path = model_path.replace("@@entitytype", "dwh_01_ext").replace("@@SourceSystem", source_name)
-
-  with open(os.path.join(".","templates","snowflake_external_table.txt"),"r") as f:
+  with open(os.path.join(".","templates","load.txt"),"r") as f:
       command_tmp = f.read()
   f.close()
-  command = command_tmp.replace("@@ExternalTablePattern",ExternalTablePattern)
-  command = command.replace("@@ExternalTableFileFormat",ExternalTableFileFormat)
-  command = command.replace("@@ExternalTableSchema",ExternalTableSchema)
-  command = command.replace("@@ExternalTableLocation",ExternalTableLocation)
-  command = command.replace("@@SourceDatabase",SourceDatabase)
-  if ExternalTableDescription is None:
-    ExternalTableDescription = ""
-  command = command.replace('@@ExternalTableDescription',ExternalTableDescription)
-  command = command.replace("@@ExternalTableName", ExternalTableName.upper() )     
+  command = command_tmp.replace("@@source_table", str(source_table_name_long).upper())
+  command = command.replace("@@source_database",source_database)
+  command = command.replace("@@dbt_source_name",dbt_source_name)
+  command = command.replace("@@is_hwm",is_hwm)
+  command = command.replace("@@dub_check",dub_check)
+  command = command.replace("@@key_check",key_check)
+  command = command.replace("@@source_type",source_type)
+  command = command.replace("@@columns", columns)
+  command = command.replace("@@default_columns", default_columns)
+  command = command.replace("@@additional_columns", additional_columns)
+  command = command.replace("@@materialization", materialization)
+  command = command.replace("@@pre_hook", pre_hook.replace('"', '\''))
+  command = command.replace("@@post_hook", post_hook.replace('"', '\''))
 
-  target_table_name = ExternalTableName.lower() 
-
-  filename = os.path.join(model_path, f"{target_table_name.lower()}.yml")
+  filename = os.path.join(model_path, f"{target_table_name.lower()}.sql")
 
   path =model_path
 
@@ -109,4 +171,4 @@ def generate_snowflake_external_table(  source_name
   with open(filename, 'w') as f:
     f.write(command.expandtabs(2))
 
-  print(f"Created model \'{target_table_name.lower()}.sql\'")
+  print(f"Created model {filename.lower()}")

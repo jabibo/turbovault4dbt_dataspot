@@ -29,7 +29,7 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
               (SELECT l.link_primary_key_physical_name, l.Source_Column_Physical_Name,FALSE as IS_SATELLITE
               FROM nh_link_entities l
               inner join source_data src on l.Source_Table_Identifier = src.Source_table_identifier
-              WHERE l.title ='BK' and src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
+              WHERE l.identifying = True and src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
               ORDER BY l.Target_Column_Sort_Order)
               group by link_primary_key_physical_name              
               UNION ALL
@@ -90,7 +90,7 @@ def gen_derived_columns(cursor,source):
               inner join source_data src on s.Source_Table_Identifier = src.Source_table_identifier
               WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
               and source_column_physical_name<>target_column_physical_name
-              union all
+              union
               SELECT 
               source_column_physical_name 
               , target_column_physical_name  
@@ -99,7 +99,7 @@ def gen_derived_columns(cursor,source):
               inner join source_data src on s.Source_Table_Identifier = src.Source_table_identifier
               WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
               and source_column_physical_name<>target_column_physical_name
-              union all
+              union
               SELECT distinct
               case when transformation_rule<>''
                      then transformation_rule
@@ -194,7 +194,7 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
 
   for row in sources: #sources usually only has one row
     source_schema_name = row[0]
-    source_table_name = row[1]  
+    source_table_name = row[1]
     target_table_name = row[1].replace('load', 'stg') 
     rs = row[2]
     ldts = row[3]
@@ -221,3 +221,4 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
     f.write(command.expandtabs(2))
 
   print(f"Created model \'{target_table_name.lower()}.sql\'")
+  

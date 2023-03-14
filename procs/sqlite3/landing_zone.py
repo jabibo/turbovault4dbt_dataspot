@@ -7,14 +7,14 @@ def generate_landing_zone(cursor, source,model_path):
   source_name, source_object = source.split("_")
   query = f"""SELECT 
                   source_name
-                , dbtSourceName
-                , ExternalTablePattern
-                , ExternalTableFileFormat
-                , ExternalTableSchema
-                , ExternalTableLocation
-                , SourceDatabase
-                , ExternalTableDescription
-                , ExternalTableName
+                , dbt_source_name
+                , external_table_pattern
+                , external_table_fileformat
+                , external_table_schema
+                , external_table_location
+                , source_database
+                , external_table_description
+                , external_table_name
                 , source_type
               FROM landing_zone
               WHERE source_name = '{source_name}' 
@@ -38,30 +38,30 @@ def generate_landing_zone(cursor, source,model_path):
 
 def generate_snowflake_external_table(  source_name
                                       , model_path
-                                      , ExternalTablePattern
-                                      , ExternalTableFileFormat
-                                      , ExternalTableSchema
-                                      , ExternalTableLocation
-                                      , SourceDatabase
-                                      , ExternalTableDescription
-                                      , ExternalTableName
+                                      , external_table_pattern
+                                      , external_table_fileformat
+                                      , external_table_schema
+                                      , external_table_location
+                                      , source_database
+                                      , external_table_description
+                                      , external_table_name
                                       , ):
   model_path = model_path.replace("@@entitytype", "dwh_01_ext").replace("@@SourceSystem", source_name)
 
   with open(os.path.join(".","templates","snowflake_external_table.txt"),"r") as f:
       command_tmp = f.read()
   f.close()
-  command = command_tmp.replace("@@ExternalTablePattern",ExternalTablePattern)
-  command = command.replace("@@ExternalTableFileFormat",ExternalTableFileFormat)
-  command = command.replace("@@ExternalTableSchema",ExternalTableSchema)
-  command = command.replace("@@ExternalTableLocation",ExternalTableLocation)
-  command = command.replace("@@SourceDatabase",SourceDatabase)
-  if ExternalTableDescription is None:
-    ExternalTableDescription = ""
-  command = command.replace('@@ExternalTableDescription',ExternalTableDescription)
-  command = command.replace("@@ExternalTableName", ExternalTableName.upper() )     
+  command = command_tmp.replace("@@external_table_pattern",external_table_pattern)
+  command = command.replace("@@external_table_fileformat",external_table_fileformat)
+  command = command.replace("@@external_table_schema",external_table_schema)
+  command = command.replace("@@external_table_location",external_table_location)
+  command = command.replace("@@source_database",source_database)
+  if external_table_description is None:
+    external_table_description = ""
+  command = command.replace('@@external_table_description',external_table_description)
+  command = command.replace("@@external_table_name", external_table_name.upper() )     
 
-  target_table_name = ExternalTableName.lower() 
+  target_table_name = external_table_name.lower() 
 
   filename = os.path.join(model_path, f"{target_table_name.lower()}.yml")
 
