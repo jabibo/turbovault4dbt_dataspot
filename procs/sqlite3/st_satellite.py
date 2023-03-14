@@ -47,6 +47,7 @@ def generate_satellite_list(cursor, source):
 	                on link_entities.Source_Table_Identifier = source_data.source_table_identifier 
 	                where link_entities.source_table_identifier='{source}'
 	                and link_entities.has_statustracking
+                    group by link_identifier, source_system, target_primary_key_physical_name, source_table_physical_name, target_link_table_physical_name
 	             ) a where satellite_identifier is not null
                 """
 
