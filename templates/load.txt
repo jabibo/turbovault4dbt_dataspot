@@ -1,0 +1,37 @@
+{{ config(materialized="@@materialization", pre_hook=["@@pre_hook"], post_hook=["@@post_hook"]) }}
+
+{%- set yaml_metadata -%}
+source_model: 
+  source_table: @@source_table
+  source_database: @@source_database
+  source_name: @@dbt_source_name
+hwm: @@is_hwm
+source_type: @@source_type
+@@dub_check
+@@key_check
+@@columns
+@@default_columns
+@@additional_columns
+{%- endset -%}
+
+{%- set metadata_dict = fromyaml(yaml_metadata) -%}
+
+{%- set source_model = metadata_dict['source_model'] -%}
+{%- set default_columns = metadata_dict['default_columns'] -%}
+{%- set additional_columns = metadata_dict['additional_columns'] -%}
+{%- set key_check = metadata_dict['key_check'] -%}
+{%- set dub_check = metadata_dict['dub_check'] -%}
+
+{%- set hwm = metadata_dict['hwm'] -%}
+{%- set sourcetype = metadata_dict['sourcetype'] -%}
+{%- set columns = metadata_dict['columns'] -%}
+
+{{ load(source_model=source_model
+                    , default_columns=default_columns
+                    , additional_columns=additional_columns
+                    , key_check=key_check
+                    , dub_check=dub_check
+                    , hwm=hwm
+                    , sourcetype=sourcetype
+                    , columns=columns
+                    ) }}

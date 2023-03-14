@@ -15,7 +15,7 @@ derived_columns:
       value: {{var("local_timestamp")}}
       datatype: 'TIMESTAMP'
     edts:      
-      value: business_date
+      value: edts
       datatype: 'DATE'
 
 rsrc: '@@RecordSource' 

@@ -5,6 +5,8 @@ from procs.sqlite3 import satellite
 from procs.sqlite3 import hub
 from procs.sqlite3 import link
 from procs.sqlite3 import nh_link
+from procs.sqlite3 import load
+from procs.sqlite3 import landing_zone
 from procs.sqlite3 import st_satellite
 						  
 import pandas as pd
@@ -44,6 +46,15 @@ def connect_sqlite():
     sql_nh_link_entities = "SELECT * FROM nh_link_entities"
     df_nh_link_entities = pd.read_sql_query(sql_nh_link_entities, conn)
 
+    sql_landing_zone= "SELECT * FROM landing_zone"
+    df_landing_zone = pd.read_sql_query(sql_landing_zone, conn)
+
+    sql_load_tables= "SELECT * FROM load_tables"
+    df_load_tables = pd.read_sql_query(sql_load_tables, conn)
+
+    sql_load_table_attributes= "SELECT * FROM load_table_attributes"
+    df_load_table_attributes = pd.read_sql_query(sql_load_table_attributes, conn)
+
     dfs = {
         "source_data": df_source_data,
         "hub_entities": df_hub_entities,
@@ -51,6 +62,9 @@ def connect_sqlite():
         "hub_satellites": df_hub_satellites,
         "link_satellites": df_link_satellites,
         "nh_link_entities": df_nh_link_entities,        
+        "landing_zone": df_landing_zone,        
+        "load_tables": df_load_tables,        
+        "load_table_attributes": df_load_table_attributes,        
     }
 
     db = sqlite3.connect(':memory:')
@@ -92,7 +106,10 @@ def main():
     generated_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     # Set default values for the arguments
-    default_tasks = [["Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite"]]
+    #default_tasks = ["Stage", "Hub", "Satellite", "Link", "non_historized_Link", "landing_zone", "Load"]
+    default_tasks = ["Load"]
+    # default_sources = [["webshop_lieferung"]]
+#    default_tasks = [["Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite"]]
     default_sources = [['webshop_vereinspartner', 'webshop_kunde', 'roadshow_bestellung', 'webshop_bestellung', 'webshop_lieferadresse', 'webshop_lieferung', 'webshop_lieferdienst', 'webshop_wohnort', 'webshop_position', 'webshop_produkt', 'webshop_produktkategorie']]
 
 
@@ -117,8 +134,8 @@ def main():
             help="Select the entities which you want to generate",
             action="append",
             widget="Listbox",
-            choices=["Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite"],
-            default=default_tasks,            
+            choices=["Stage", "Hub", "Satellite", "Link", "non_historized_Link", "landing_zone", "Load", "Status_Tracking_Satellite"],
+            default=default_tasks,
             nargs="*",
             gooey_options={"height": 300},
         )
@@ -162,6 +179,13 @@ def main():
         if 'non_historized_Link' in todo: 
             nh_link.generate_nh_link(cursor,source, generated_timestamp, rdv_default_schema, model_path)
 
+        if 'Load' in todo: 
+            load.generate_load(cursor, source, model_path)
+
+        if 'landing_zone' in todo: 
+            landing_zone.generate_landing_zone(cursor, source, model_path)
+
+
 
     cursor.close()
 
@@ -172,3 +196,4 @@ if __name__ == "__main__":
     end = time.time()
     print("Script ends.")
     print("Total Runtime: " + str(round(end - start, 2)) + "s")
+
