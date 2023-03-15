@@ -106,15 +106,15 @@ def main():
     generated_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     # Set default values for the arguments
-    #default_tasks = ["Stage", "Hub", "Satellite", "Link", "non_historized_Link", "landing_zone", "Load"]
-    default_tasks = ["Load"]
-    # default_sources = [["webshop_lieferung"]]
+    default_tasks = ["landing_zone", "Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite"]
+    #m default_tasks = ["Load"]
+    # default_sources = [["ws_lieferung"]]
 #    default_tasks = [["Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite"]]
-    default_sources = [['webshop_vereinspartner', 'webshop_kunde', 'roadshow_bestellung', 'webshop_bestellung', 'webshop_lieferadresse', 'webshop_lieferung', 'webshop_lieferdienst', 'webshop_wohnort', 'webshop_position', 'webshop_produkt', 'webshop_produktkategorie']]
+    default_sources = [['ws_vereinspartner', 'ws_kunde', 'rs_bestellung', 'ws_bestellung', 'ws_lieferadresse', 'ws_lieferung', 'ws_lieferdienst', 'ws_wohnort', 'ws_position', 'ws_produkt', 'ws_produktkategorie']]
 
 
     # Set a flag to indicate whether to use Gooey or not
-    use_gooey = True
+    use_gooey = False
 
     # Check if the program is running in debug mode
     if not use_gooey:
@@ -152,7 +152,7 @@ def main():
         
     print(args.Tasks[0])    
     try:
-        todo = args.Tasks[0]
+        todo = args.Tasks
 
     except IndexError:
         print("No entities selected.")

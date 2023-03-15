@@ -6,7 +6,7 @@ import os
 def generate_landing_zone(cursor, source,model_path):
   source_name, source_object = source.split("_")
   query = f"""SELECT 
-                  source_name
+                  source_short
                 , dbt_source_name
                 , external_table_pattern
                 , external_table_fileformat
@@ -17,7 +17,7 @@ def generate_landing_zone(cursor, source,model_path):
                 , external_table_name
                 , source_type
               FROM landing_zone
-              WHERE source_name = '{source_name}' 
+              WHERE source_short = '{source_name}' 
               and source_table_name = '{source_object}'"""
   
   cursor.execute(query)
@@ -48,7 +48,7 @@ def generate_snowflake_external_table(  source_name
                                       , ):
   model_path = model_path.replace("@@entitytype", "dwh_01_ext").replace("@@SourceSystem", source_name)
 
-  with open(os.path.join(".","templates","snowflake_external_table.txt"),"r") as f:
+  with open(os.path.join(".","templates","landing_zone.txt"),"r") as f:
       command_tmp = f.read()
   f.close()
   command = command_tmp.replace("@@external_table_pattern",external_table_pattern)

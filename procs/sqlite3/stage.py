@@ -188,7 +188,6 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
 
   query = f"""SELECT Source_Schema_Physical_Name,Source_Table_Physical_Name, Record_Source_Column, Load_Date_Column  FROM source_data src
                 WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'"""
-  
   cursor.execute(query)
   sources = cursor.fetchall()
 
@@ -198,27 +197,27 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
     target_table_name = row[1].replace('load', 'stg') 
     rs = row[2]
     ldts = row[3]
-  timestamp = generated_timestamp
-  
-  with open(os.path.join(".","templates","stage.txt"),"r") as f:
-      command_tmp = f.read()
-  f.close()
-  command = command_tmp.replace("@@RecordSource",rs).replace("@@LoadDate",ldts).replace("@@HashedColumns", hashed_columns).replace("@@derived_columns", derived_columns).replace("@@PrejoinedColumns",prejoins).replace('@@SourceName',source_schema_name).replace('@@SourceTable',source_table_name).replace('@@SCHEMA',stage_default_schema)
+    timestamp = generated_timestamp
+    
+    with open(os.path.join(".","templates","stage.txt"),"r") as f:
+        command_tmp = f.read()
+    f.close()
+    command = command_tmp.replace("@@RecordSource",rs).replace("@@LoadDate",ldts).replace("@@HashedColumns", hashed_columns).replace("@@derived_columns", derived_columns).replace("@@PrejoinedColumns",prejoins).replace('@@SourceName',source_schema_name).replace('@@SourceTable',source_table_name).replace('@@SCHEMA',stage_default_schema)
 
-  business_object = target_table_name.split('_')[2]      
+    business_object = target_table_name.split('_')[2]      
 
-  filename = os.path.join(model_path , business_object, f"{target_table_name.lower()}.sql")
+    filename = os.path.join(model_path , business_object, f"{target_table_name.lower()}.sql")
 
-  path =os.path.join(model_path, business_object)
+    path =os.path.join(model_path, business_object)
 
-  # Check whether the specified path exists or not
-  isExist = os.path.exists(path)
-  if not isExist:   
-  # Create a new directory because it does not exist 
-      os.makedirs(path)
+    # Check whether the specified path exists or not
+    isExist = os.path.exists(path)
+    if not isExist:   
+    # Create a new directory because it does not exist 
+        os.makedirs(path)
 
-  with open(filename, 'w') as f:
-    f.write(command.expandtabs(2))
+    with open(filename, 'w') as f:
+      f.write(command.expandtabs(2))
 
-  print(f"Created model \'{target_table_name.lower()}.sql\'")
+    print(f"Created model \'{target_table_name.lower()}.sql\'")
   
