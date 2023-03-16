@@ -7,8 +7,8 @@ def generate_satellite_list(cursor, source):
     source_name, source_object = source.split("_")
 
     query = f"""SELECT 
-                replace(business_key_physical_name, '_bk', '')||'_' || SUBSTRING(source_table_identifier, 1,  instr(source_table_identifier, '_')-1)||'_sts' as satellite_identifier
-                , replace(business_key_physical_name, '_bk', '')||'_' || SUBSTRING(source_table_identifier, 1,  instr(source_table_identifier, '_')-1)||'_sts' as Target_Satellite_Table_Physical_Name
+                replace(business_key_physical_name, '_bk', '')||'_' ||  source_short ||'_sts' as satellite_identifier
+                , replace(business_key_physical_name, '_bk', '')||'_' || source_short ||'_sts' as Target_Satellite_Table_Physical_Name
                 , target_primary_key_physical_name hub_primary_key_physical_name
                 , '' payload
                 , source_table_physical_name 
@@ -33,8 +33,8 @@ def generate_satellite_list(cursor, source):
                 from 
                 (
 	                SELECT distinct
-	                link_identifier||'_'||Source_system||'_sts' as satellite_identifier
-	                , link_identifier||'_'||Source_system||'_sts'  as Target_Satellite_Table_Physical_Name
+	                link_identifier||'_'||source_short||'_sts' as satellite_identifier
+	                , link_identifier||'_'||source_short||'_sts'  as Target_Satellite_Table_Physical_Name
 	                , target_primary_key_physical_name hub_primary_key_physical_name
 	                ,  '' payload
 	                , source_data.source_table_physical_name 
@@ -47,7 +47,7 @@ def generate_satellite_list(cursor, source):
 	                on link_entities.Source_Table_Identifier = source_data.source_table_identifier 
 	                where link_entities.source_table_identifier='{source}'
 	                and link_entities.has_statustracking
-                    group by link_identifier, source_system, target_primary_key_physical_name, source_table_physical_name, target_link_table_physical_name
+                    group by link_identifier, source_short, target_primary_key_physical_name, source_table_physical_name, target_link_table_physical_name
 	             ) a where satellite_identifier is not null
                 """
 
