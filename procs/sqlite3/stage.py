@@ -78,18 +78,22 @@ def gen_derived_columns(cursor,source):
   source_name, source_object = source.split("_")
 
   query = f"""
-                SELECT 
+   SELECT 
               group_concat(source_column_physical_name), target_column_physical_name, transformation_rule  
               from
               (              
               SELECT 
-              source_column_physical_name 
+              case when transformation_rule<>''
+                     then transformation_rule
+                     else source_column_physical_name end as source_column_physical_name 
               , target_column_physical_name
-              , False as transformation_rule
+              , case when transformation_rule<>''
+                     then True
+                     else False end as transformation_rule
               FROM hub_satellites s
               inner join source_data src on s.Source_Table_Identifier = src.Source_table_identifier
               WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
-              and source_column_physical_name<>target_column_physical_name
+              and source_column_physical_name<>target_column_physical_name 
               union
               SELECT 
               source_column_physical_name 
@@ -111,9 +115,9 @@ def gen_derived_columns(cursor,source):
               FROM hub_entities s
               inner join source_data src on s.Source_Table_Identifier = src.Source_table_identifier
               WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
-              and source_column_physical_name<>business_key_physical_name
+              and source_column_physical_name<>business_key_physical_name          
               )
-              group by target_column_physical_name                          
+              group by target_column_physical_name  
               """
   cursor.execute(query)
   results = cursor.fetchall()
