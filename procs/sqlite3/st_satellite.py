@@ -7,44 +7,49 @@ def generate_satellite_list(cursor, source):
     source_name, source_object = source.split("_")
 
     query = f"""SELECT 
-                replace(business_key_physical_name, '_bk', '')||'_' ||  source_short ||'_sts' as satellite_identifier
-                , replace(business_key_physical_name, '_bk', '')||'_' || source_short ||'_sts' as Target_Satellite_Table_Physical_Name
-                , target_primary_key_physical_name hub_primary_key_physical_name
-                , '' payload
-                , source_table_physical_name 
-                , 'ldts' as load_date_column
-                , NULL as driving_key                 
-                , NULL list_fks
-                , NULL target_link_table_physical_name
+                      replace(business_key_physical_name, '_bk', '')||'_' ||  source_short ||'_sts' as satellite_identifier
+                    , replace(business_key_physical_name, '_bk', '')||'_' || source_short ||'_sts' as Target_Satellite_Table_Physical_Name
+                    , target_primary_key_physical_name hub_primary_key_physical_name
+                    , '' payload
+                    , he.source_table_physical_name 
+                    , 'ldts' as load_date_column
+                    , NULL as driving_key                 
+                    , NULL list_fks
+                    , NULL target_link_table_physical_name
+                    , sd.load_completeness_type
                 from hub_entities he 
-                where source_table_identifier='{source}'
+                inner join source_data sd
+	                    on he.source_table_identifier = sd.source_table_identifier 
+                where he.source_table_identifier='{source}'
                 and has_statustracking
                 union all
                 SELECT 
-                satellite_identifier
-                , Target_Satellite_Table_Physical_Name
-                , hub_primary_key_physical_name
-                , payload
-                , source_table_physical_name 
-                , load_date_column
-                , driving_key 
-                , list_fks
-                , target_link_table_physical_name
+                      satellite_identifier
+                    , Target_Satellite_Table_Physical_Name
+                    , hub_primary_key_physical_name
+                    , payload
+                    , source_table_physical_name 
+                    , load_date_column
+                    , driving_key 
+                    , list_fks
+                    , target_link_table_physical_name
+                    , load_completeness_type
                 from 
                 (
 	                SELECT distinct
-	                link_identifier||'_'||source_short||'_sts' as satellite_identifier
-	                , link_identifier||'_'||source_short||'_sts'  as Target_Satellite_Table_Physical_Name
-	                , target_primary_key_physical_name hub_primary_key_physical_name
-	                ,  '' payload
-	                , source_data.source_table_physical_name 
-	                , 'ldts' as load_date_column
-	                , 'hk_'||driving_key||'_h' as driving_key
-	                , group_concat(target_column_physical_name, ',') list_fks
-	                , target_link_table_physical_name
+                          link_identifier||'_'||source_short||'_sts' as satellite_identifier
+                        , link_identifier||'_'||source_short||'_sts'  as Target_Satellite_Table_Physical_Name
+                        , target_primary_key_physical_name hub_primary_key_physical_name
+                        ,  '' payload
+                        , source_data.source_table_physical_name 
+                        , 'ldts' as load_date_column
+                        , 'hk_'||driving_key||'_h' as driving_key
+                        , group_concat(target_column_physical_name, ',') list_fks
+                        , target_link_table_physical_name
+                        , source_data.load_completeness_type
 	                from link_entities
 	                inner join source_data
-	                on link_entities.Source_Table_Identifier = source_data.source_table_identifier 
+	                    on link_entities.Source_Table_Identifier = source_data.source_table_identifier 
 	                where link_entities.source_table_identifier='{source}'
 	                and link_entities.has_statustracking
                     group by link_identifier, source_short, target_primary_key_physical_name, source_table_physical_name, target_link_table_physical_name
@@ -75,6 +80,7 @@ def generate_st_satellite(cursor,source, generated_timestamp, rdv_default_schema
         esat_link_name = satellite[8]
         list_secondary_fks =[]
         fks = satellite[7]
+        load_completeness_type = satellite[9]
         if fks is not None:
             list_fks = fks.split(",")
             list_secondary_fks = [fks for fks in list_fks if fks != driving_key]
@@ -86,7 +92,7 @@ def generate_st_satellite(cursor,source, generated_timestamp, rdv_default_schema
         with open(os.path.join(".","templates","st_sat_v0.txt"),"r") as f:
             command_tmp = f.read()
         f.close()
-        command_v0 = command_tmp.replace('@@SourceModel', source_model).replace('@@Hashkey', hashkey_column).replace('@@Hashdiff', hashdiff_column).replace('@@LoadDate', loaddate).replace('@@Schema', rdv_default_schema)
+        command_v0 = command_tmp.replace('@@SourceModel', source_model).replace('@@Hashkey', hashkey_column).replace('@@Hashdiff', hashdiff_column).replace('@@LoadDate', loaddate).replace('@@Schema', rdv_default_schema).replace('@@load_completeness_type', load_completeness_type)
             
 
         satellite_model_name_splitted_list = satellite_name.split('_')

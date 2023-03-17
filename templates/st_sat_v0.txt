@@ -6,7 +6,7 @@
 {%- set yaml_metadata -%}
 tracked_hashkey: "@@Hashkey"
 stage_source_model: "@@SourceModel"
-load_type: 'full'
+load_type: @@load_completeness_type
 src_edts: 'edts'
 {%- endset -%}
 
