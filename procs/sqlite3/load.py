@@ -53,8 +53,9 @@ def generate_load_table_attributes(cursor, source_short ,source_table_name, sele
    
 
 def generate_load(cursor, source, model_path):
-  source_short, source_object = source.split("_")
+  source_long, source_object = source.split("_")
   #print("generate: " + source)
+
   query = f"""SELECT 
                   source_short
                 , source_table_name
@@ -70,7 +71,7 @@ def generate_load(cursor, source, model_path):
                 , post_hook
                 , source_table_name_long
               FROM load_tables
-              WHERE source_short = '{source_short}' 
+              WHERE source_name = '{source_long}' 
               and source_table_name = '{source_object}'"""
   
   cursor.execute(query)
@@ -78,8 +79,9 @@ def generate_load(cursor, source, model_path):
   columns = ''
   additional_columns = ''
   default_columns = ''
-
+  
   for row in sources: 
+    source_short= row[0]
     columns = generate_load_table_attributes( 
                       cursor=cursor
                     , source_short =source_short

@@ -17,7 +17,7 @@ def generate_landing_zone(cursor, source,model_path):
                 , external_table_name
                 , source_type
               FROM landing_zone
-              WHERE source_short = '{source_name}' 
+              WHERE source_long = '{source_name}' 
               and source_table_name = '{source_object}'"""
   
   cursor.execute(query)
@@ -60,7 +60,6 @@ def generate_snowflake_external_table(  source_name
     external_table_description = ""
   command = command.replace('@@external_table_description',external_table_description)
   command = command.replace("@@external_table_name", external_table_name.upper() )     
-
   target_table_name = external_table_name.lower() 
 
   filename = os.path.join(model_path, f"{target_table_name.lower()}.yml")
