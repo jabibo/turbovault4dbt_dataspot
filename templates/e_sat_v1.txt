@@ -11,8 +11,8 @@ link_hashkey:  '@@LinkHashkey'
 link_name: '@@LinkName'
 driving_key: '@@DrivingKey'
 secondary_fks: '@@SecondaryFks'
-ledts_alias: 'ledts'
-src_edts: 'edts'
+@@ledts_alias
+@@edts_attribute
 add_is_current_flag: true
 {%- endset -%}    
 

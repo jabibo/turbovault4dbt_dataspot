@@ -136,7 +136,11 @@ def generate_st_satellite(cursor,source, generated_timestamp, rdv_default_schema
                 command_tmp = f.read()
             f.close()
             command_v0 = command_tmp.replace('@@StsSats', satellite_name).replace('@@LinkHashkey', hashkey_column).replace('@@DrivingKey', driving_key).replace('@@SecondaryFks', secondary_fks).replace('@@LinkName', esat_link_name).replace('@@LoadDate', loaddate)
-                
+            if effective_date_type == 'Type 1':
+                command_v0 = command_v0.replace('@@edts_attribute','edts: ' +  effective_date_attribute).replace('@@ledts_alias', 'ledts_alias: ledts' )    
+            else:
+                command_v0 = command_v0.replace('@@edts_attribute','').replace('@@ledts_alias', '')    
+             
 
             satellite_model_name_splitted_list = satellite_name.split('_')
 

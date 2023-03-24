@@ -10,7 +10,7 @@ foreign_hashkeys: @@ForeignHashkeys
 
 payload:
 @@Payload
-  - edts
+
 
 {%- endset -%}    
 

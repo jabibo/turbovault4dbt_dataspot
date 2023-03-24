@@ -103,14 +103,13 @@ def generate_nh_link(cursor, source, generated_timestamp, rdv_default_schema, mo
     payload_list = payload[2].split(',')
     effective_date_type=payload[3]
     effective_date_attribute =payload[4]
-
   payload = ''
     
   for column in payload_list:
         payload = payload + f'\t- {column.lower()}\n'
   
   if effective_date_type=='Type 1':
-        payload = payload  + f'\t- {effective_date_attribute.lower()}\n'
+    payload = payload  + f'\t- {effective_date_attribute.lower()}\n'
   
     
   link_list = generate_nh_link_list(cursor=cursor, source=source)
@@ -123,6 +122,7 @@ def generate_nh_link(cursor, source, generated_timestamp, rdv_default_schema, mo
     fk_string = ""
     for fk in fk_list:
       fk_string += f"\n\t- '{fk}'"
+
 
     source_models = generate_source_models(cursor, link_id).replace('load', 'stg')
     link_hashkey = generate_link_hashkey(cursor, link_id)

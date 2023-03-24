@@ -35,7 +35,7 @@ def generate_pit_list(cursor):
                     union 
                     select DISTINCT 
                     hub_primary_key_physical_name hashkey
-                    , satellite_identifier
+                    ,satellite_identifier
                     from hub_satellites
                     union 
                     select distinct
@@ -83,7 +83,7 @@ def generate_pit(cursor, model_path):
            
         business_object = pit_name.split('_')[0]
         
-        pit_name += '_SNP'
+        pit_name += '_snp'
         
         filename = os.path.join(model_path , business_object, f"{pit_name}.sql")
                 
