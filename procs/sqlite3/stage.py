@@ -1,7 +1,8 @@
 import codecs
 from datetime import datetime
 import os
-
+# Changes: JB: added edts
+# todo: HKE as Replacement from HK fixed
 def gen_hashed_columns(cursor,source, hashdiff_naming):
   
   command = ""
@@ -9,43 +10,109 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
   source_name, source_object = source.split("_")
 
   query = f"""
-              SELECT Target_Primary_Key_Physical_Name, GROUP_CONCAT(Source_Column_Physical_Name), IS_SATELLITE FROM 
-              (SELECT h.Target_Primary_Key_Physical_Name, h.Source_Column_Physical_Name, FALSE as IS_SATELLITE
-              FROM hub_entities h
-              inner join source_data src on h.Source_Table_Identifier = src.Source_table_identifier
-              WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
-              ORDER BY h.Target_Column_Sort_Order) 
+              SELECT  Target_Primary_Key_Physical_Name
+                    , GROUP_CONCAT(Source_Column_Physical_Name)
+                    , IS_SATELLITE 
+                    , effective_date_type
+                    , effective_date_attribute
+              FROM 
+              (
+                SELECT 
+                    h.Target_Primary_Key_Physical_Name
+                  , h.Source_Column_Physical_Name
+                  , FALSE as IS_SATELLITE
+                  , src.effective_date_type
+                  , src.effective_date_attribute
+                FROM hub_entities h
+                inner join source_data src 
+                  on h.Source_Table_Identifier = src.Source_table_identifier
+                WHERE src.Source_System = '{source_name}' 
+                and src.Source_Object = '{source_object}'
+                ORDER BY h.Target_Column_Sort_Order
+              ) 
               GROUP BY Target_Primary_Key_Physical_Name
               UNION ALL
-              SELECT Target_Primary_Key_Physical_Name, GROUP_CONCAT(Source_Column_Physical_Name), IS_SATELLITE FROM
-              (SELECT l.Target_Primary_Key_Physical_Name, l.Source_Column_Physical_Name,FALSE as IS_SATELLITE
-              FROM link_entities l
-              inner join source_data src on l.Source_Table_Identifier = src.Source_table_identifier
-              WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
-              ORDER BY l.Target_Column_Sort_Order)
+              SELECT  Target_Primary_Key_Physical_Name
+                    , GROUP_CONCAT(Source_Column_Physical_Name)
+                    , IS_SATELLITE 
+                    , effective_date_type
+                    , effective_date_attribute
+              FROM
+              (
+                SELECT  l.Target_Primary_Key_Physical_Name
+                      , l.Source_Column_Physical_Name
+                      , FALSE as IS_SATELLITE
+                      , src.effective_date_type
+                      , src.effective_date_attribute
+                FROM link_entities l
+                inner join source_data src
+                  on l.Source_Table_Identifier = src.Source_table_identifier
+                WHERE src.Source_System = '{source_name}' 
+                and src.Source_Object = '{source_object}'
+                ORDER BY l.Target_Column_Sort_Order
+              )
               group by Target_Primary_Key_Physical_Name
               UNION ALL
-              SELECT link_primary_key_physical_name, GROUP_CONCAT(Source_Column_Physical_Name), IS_SATELLITE FROM
-              (SELECT l.link_primary_key_physical_name, l.Source_Column_Physical_Name,FALSE as IS_SATELLITE
-              FROM nh_link_entities l
-              inner join source_data src on l.Source_Table_Identifier = src.Source_table_identifier
-              WHERE l.identifying = True and src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
-              ORDER BY l.Target_Column_Sort_Order)
+              SELECT  link_primary_key_physical_name
+                    , GROUP_CONCAT(Source_Column_Physical_Name)
+                    , IS_SATELLITE 
+                    , effective_date_type
+                    , effective_date_attribute
+              FROM
+              (
+                SELECT  l.link_primary_key_physical_name
+                        , l.Source_Column_Physical_Name
+                        , FALSE as IS_SATELLITE
+                        , src.effective_date_type
+                        , src.effective_date_attribute
+                FROM nh_link_entities l
+                inner join source_data src 
+                  on l.Source_Table_Identifier = src.Source_table_identifier
+                WHERE l.identifying = True 
+                  and src.Source_System = '{source_name}' 
+                  and src.Source_Object = '{source_object}'
+                ORDER BY l.Target_Column_Sort_Order
+              )
               group by link_primary_key_physical_name              
               UNION ALL
-              SELECT Target_Satellite_Table_Physical_Name,GROUP_CONCAT(Source_Column_Physical_Name),IS_SATELLITE FROM 
-              (SELECT '{hashdiff_naming.replace("@@SatName", "")}' || s.Target_Satellite_Table_Physical_Name as Target_Satellite_Table_Physical_Name,s.Source_Column_Physical_Name,TRUE as IS_SATELLITE
-              FROM hub_satellites s
-              inner join source_data src on s.Source_Table_Identifier = src.Source_table_identifier
-              WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
-              order by s.Target_Column_Sort_Order)
+              SELECT  Target_Satellite_Table_Physical_Name
+                    , GROUP_CONCAT(Source_Column_Physical_Name)
+                    , IS_SATELLITE 
+                    , effective_date_type
+                    , effective_date_attribute
+              FROM 
+              (
+                SELECT '{hashdiff_naming.replace("@@SatName", "")}' || s.Target_Satellite_Table_Physical_Name as Target_Satellite_Table_Physical_Name
+                      , s.Source_Column_Physical_Name
+                      , TRUE as IS_SATELLITE
+                      , src.effective_date_type
+                      , src.effective_date_attribute
+                FROM hub_satellites s
+                inner join source_data src 
+                  on s.Source_Table_Identifier = src.Source_table_identifier
+                WHERE src.Source_System = '{source_name}' 
+                  and src.Source_Object = '{source_object}'
+                order by s.Target_Column_Sort_Order
+              )
               group by Target_Satellite_Table_Physical_Name
               UNION ALL
-              SELECT Target_Satellite_Table_Physical_Name,GROUP_CONCAT(Source_Column_Physical_Name),IS_SATELLITE FROM
-              (SELECT '{hashdiff_naming.replace("@@SatName", "")}' || s.Target_Satellite_Table_Physical_Name as Target_Satellite_Table_Physical_Name,s.Source_Column_Physical_Name,TRUE as IS_SATELLITE
+              SELECT  Target_Satellite_Table_Physical_Name
+                    , GROUP_CONCAT(Source_Column_Physical_Name)
+                    , IS_SATELLITE 
+                    , effective_date_type
+                    , effective_date_attribute
+              FROM
+              (
+                SELECT  '{hashdiff_naming.replace("@@SatName", "")}' || s.Target_Satellite_Table_Physical_Name as Target_Satellite_Table_Physical_Name
+                      , s.Source_Column_Physical_Name
+                      , TRUE as IS_SATELLITE
+                      , src.effective_date_type
+                      , src.effective_date_attribute
               FROM link_satellites s
-              inner join source_data src on s.Source_Table_Identifier = src.Source_table_identifier
-              WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'
+              inner join source_data src 
+                on s.Source_Table_Identifier = src.Source_table_identifier
+              WHERE src.Source_System = '{source_name}' 
+                and src.Source_Object = '{source_object}'
               order by s.Target_Column_Sort_Order)
               group by Target_Satellite_Table_Physical_Name
               """
@@ -58,16 +125,26 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
     bk_list = hashkey[1].split(",")
 
     command = command + f"\t{hashkey_name}:\n"
-
     if hashkey[2]: 
       command = command + "\t\tis_hashdiff: true\n\t\tcolumns:\n"
 
+      print("hashkey[4]:" + hashkey_name + ":" + hashkey[4])
+      if hashkey[3]=='Type 1': 
+        bk_list.append(hashkey[4])
+
       for bk in bk_list:
-        command = command + f"\t\t\t- {bk}\n"
-    
+        command = command + f"\t\t\t- {bk}\n"  
     else:
       for bk in bk_list:
         command = command + f"\t\t- {bk}\n"
+
+    if hashkey[3]=='Type 1' and not hashkey[2]: 
+      hashkey_name = hashkey[0].replace('hk_', 'hke_')
+      bk_list = (hashkey[1].split(","))
+      bk_list.append(hashkey[4])
+      command = command + f"\t{hashkey_name}:\n"
+      for bk in bk_list:
+          command = command + f"\t\t- {bk}\n"
 
   return command
 

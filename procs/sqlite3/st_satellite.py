@@ -17,6 +17,8 @@ def generate_satellite_list(cursor, source):
                     , NULL list_fks
                     , NULL target_link_table_physical_name
                     , sd.load_completeness_type
+                    , sd.effective_date_type
+                    , sd.effective_date_attribute 
                 from hub_entities he 
                 inner join source_data sd
 	                    on he.source_table_identifier = sd.source_table_identifier 
@@ -34,6 +36,8 @@ def generate_satellite_list(cursor, source):
                     , list_fks
                     , target_link_table_physical_name
                     , load_completeness_type
+                    , effective_date_type
+                    , effective_date_attribute 
                 from 
                 (
 	                SELECT distinct
@@ -47,6 +51,8 @@ def generate_satellite_list(cursor, source):
                         , group_concat(target_column_physical_name, ',') list_fks
                         , target_link_table_physical_name
                         , source_data.load_completeness_type
+                        , source_data.effective_date_type
+                        , source_data.effective_date_attribute 
 	                from link_entities
 	                inner join source_data
 	                    on link_entities.Source_Table_Identifier = source_data.source_table_identifier 
@@ -81,6 +87,9 @@ def generate_st_satellite(cursor,source, generated_timestamp, rdv_default_schema
         list_secondary_fks =[]
         fks = satellite[7]
         load_completeness_type = satellite[9]
+        effective_date_type = satellite[10]
+        effective_date_attribute = satellite[11]
+
         if fks is not None:
             list_fks = fks.split(",")
             list_secondary_fks = [fks for fks in list_fks if fks != driving_key]
@@ -93,8 +102,10 @@ def generate_st_satellite(cursor,source, generated_timestamp, rdv_default_schema
             command_tmp = f.read()
         f.close()
         command_v0 = command_tmp.replace('@@SourceModel', source_model).replace('@@Hashkey', hashkey_column).replace('@@Hashdiff', hashdiff_column).replace('@@LoadDate', loaddate).replace('@@Schema', rdv_default_schema).replace('@@load_completeness_type', load_completeness_type)
-            
-
+        if effective_date_type == 'Type 1':
+            command_v0 = command_v0.replace('@@edts_attribute','src_edts: ' +  effective_date_attribute).replace('@@edts_hashkey', 'edts_hashkey: ' + hashkey_column.replace('hk_','hke_'))    
+        else:
+            command_v0 = command_v0.replace('@@edts_attribute','').replace('@@edts_hashkey', '')    
         satellite_model_name_splitted_list = satellite_name.split('_')
 
         #satellite_model_name_splitted_list[-2] += '0'

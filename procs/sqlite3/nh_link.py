@@ -4,9 +4,17 @@ def generate_source_models(cursor, link_id):
 
     command = ""
 
-    query = f"""SELECT Source_Table_Physical_Name,GROUP_CONCAT(link_primary_key_physical_name), '' Static_Part_of_Record_Source_Column
+    query = f"""SELECT 
+                  Source_Table_Physical_Name
+                , GROUP_CONCAT(link_primary_key_physical_name)
+                , '' Static_Part_of_Record_Source_Column
                 FROM 
-                (SELECT distinct src.Source_Table_Physical_Name,h.link_primary_key_physical_name ,src.Static_Part_of_Record_Source_Column FROM nh_link_entities h
+                (
+                    SELECT distinct 
+                        src.Source_Table_Physical_Name
+                      , h.link_primary_key_physical_name 
+                      , src.Static_Part_of_Record_Source_Column 
+                    FROM nh_link_entities h
                 inner join source_data src on h.Source_Table_Identifier = src.Source_table_identifier
                 where 1=1
                 and link_Identifier = '{link_id}'
@@ -70,12 +78,16 @@ def generate_link_hashkey(cursor, link_id):
 def generate_payload_list(cursor, source):
   
     query = f"""SELECT 
-                Link_Identifier,Target_link_table_physical_name,GROUP_CONCAT(Target_column_physical_name)
+                    Link_Identifier
+                  , Target_link_table_physical_name
+                  , GROUP_CONCAT(Target_column_physical_name)
+                  , effective_date_type
+                  , effective_date_attribute 
                 from nh_link_entities
-                where source_table_identifier ='{source}' and identifying = False
-                group by Link_Identifier,Target_link_table_physical_name
+                where nh_link_entities.source_table_identifier ='{source}' 
+                and identifying = False
+                group by Link_Identifier,Target_link_table_physical_name, effective_date_type, effective_date_attribute 
                 """
-
     cursor.execute(query)
     results = cursor.fetchall()
     #payload_list = results[2].split(',')
@@ -85,13 +97,21 @@ def generate_nh_link(cursor, source, generated_timestamp, rdv_default_schema, mo
 
   nh_link_payload_list = generate_payload_list(cursor=cursor, source=source)
   payload_list = []
+  effective_date_type=''
+  effective_date_attribute =''
   for payload in nh_link_payload_list:
     payload_list = payload[2].split(',')
+    effective_date_type=payload[3]
+    effective_date_attribute =payload[4]
+
   payload = ''
     
   for column in payload_list:
         payload = payload + f'\t- {column.lower()}\n'
-    
+  
+  if effective_date_type=='Type 1':
+        payload = payload  + f'\t- {effective_date_attribute.lower()}\n'
+  
     
   link_list = generate_nh_link_list(cursor=cursor, source=source)
   for link in link_list:

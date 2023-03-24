@@ -1,12 +1,15 @@
 from numpy import object_
 import os
 
-def gen_payload(payload_list):
+def gen_payload(payload_list,effective_date_type='', effective_date_attribute='', hashkey_column=''):
     payload_string = ''
     
     for column in payload_list:
         payload_string = payload_string + f'\t- {column.lower()}\n'
     
+    if effective_date_type=='Type 1':
+        payload_string = payload_string  + f'\t- {effective_date_attribute.lower()}\n'
+        payload_string = payload_string  + f'\t- {hashkey_column.lower().replace("hk_", "hke_")}\n'
     return payload_string
 
 def gen_ma_key(satellite_ma_list):
@@ -24,33 +27,70 @@ def generate_satellite_list(cursor, source):
 
     source_name, source_object = source.split("_")
 
-    query = f"""SELECT DISTINCT Satellite_Identifier,Target_Satellite_Table_Physical_Name,Hub_Primary_Key_Physical_Name,GROUP_CONCAT(Target_Column_Physical_Name),
-                Source_Table_Physical_Name,Load_Date_Column
-                from 
-                (SELECT DISTINCT hs.Satellite_Identifier,hs.Target_Satellite_Table_Physical_Name,hs.Hub_Primary_Key_Physical_Name,hs.Target_Column_Physical_Name,
-                src.Source_Table_Physical_Name,src.Load_Date_Column FROM hub_satellites hs
-                inner join source_data src on src.Source_table_identifier = hs.Source_Table_Identifier
-                where hs.ma_attribute is false -- it is no multiactive attribute
-                and src.Source_System = '{source_name}'
-                and src.Source_Object = '{source_object}'
-                order by Target_Column_Sort_Order asc)
-                group by Satellite_Identifier,Target_Satellite_Table_Physical_Name,Hub_Primary_Key_Physical_Name,Source_Table_Physical_Name,Load_Date_Column
+    query = f"""
+    SELECT DISTINCT 
+          Satellite_Identifier
+        , Target_Satellite_Table_Physical_Name
+        , Hub_Primary_Key_Physical_Name
+        , GROUP_CONCAT(Target_Column_Physical_Name)
+        , Source_Table_Physical_Name,Load_Date_Column
+        , effective_date_type
+        , effective_date_attribute 
+                
+    from 
+    (
+        SELECT DISTINCT 
+            hs.Satellite_Identifier
+            ,hs.Target_Satellite_Table_Physical_Name
+            ,hs.Hub_Primary_Key_Physical_Name
+            ,hs.Target_Column_Physical_Name
+            ,src.Source_Table_Physical_Name
+            ,src.Load_Date_Column 
+            , src.effective_date_type
+            , src.effective_date_attribute 
+        FROM hub_satellites hs
+        inner join source_data src 
+            on src.Source_table_identifier = hs.Source_Table_Identifier
+        where hs.ma_attribute is false -- it is no multiactive attribute
+        and src.Source_System = '{source_name}'
+        and src.Source_Object = '{source_object}'
+        order by Target_Column_Sort_Order asc
+    )
+    group by Satellite_Identifier,Target_Satellite_Table_Physical_Name,Hub_Primary_Key_Physical_Name,Source_Table_Physical_Name,Load_Date_Column, effective_date_type, effective_date_attribute 
 
-UNION
 
-SELECT DISTINCT Satellite_Identifier,Target_Satellite_Table_Physical_Name,Link_primary_key_physical_name,GROUP_CONCAT(Target_Column_Physical_Name),
-                Source_Table_Physical_Name,Load_Date_Column
-                FROM(
-                SELECT DISTINCT ls.Satellite_Identifier,ls.Target_Satellite_Table_Physical_Name,ls.Link_primary_key_physical_name,ls.Target_Column_Physical_Name,
-                src.Source_Table_Physical_Name,src.Load_Date_Column
-                from link_satellites ls
-                inner join source_data src on src.Source_table_identifier = ls.Source_Table_Identifier
-                where 1=1
-                and src.Source_System = '{source_name}'
-                and src.Source_Object = '{source_object}'
-                order by Target_Column_Sort_Order asc)
-                group by Satellite_Identifier,Target_Satellite_Table_Physical_Name,Link_primary_key_physical_name,Source_Table_Physical_Name,Load_Date_Column
-                """
+    UNION
+
+    SELECT DISTINCT 
+        Satellite_Identifier
+        ,Target_Satellite_Table_Physical_Name
+        ,Link_primary_key_physical_name
+        ,GROUP_CONCAT(Target_Column_Physical_Name)
+        ,Source_Table_Physical_Name,Load_Date_Column
+        , effective_date_type
+        , effective_date_attribute 
+        FROM
+        (
+            SELECT DISTINCT 
+                ls.Satellite_Identifier
+                ,ls.Target_Satellite_Table_Physical_Name
+                ,ls.Link_primary_key_physical_name
+                ,ls.Target_Column_Physical_Name
+                ,src.Source_Table_Physical_Name
+                ,src.Load_Date_Column
+                , src.effective_date_type
+                , src.effective_date_attribute 
+            from link_satellites ls
+            inner join source_data src 
+                on src.Source_table_identifier = ls.Source_Table_Identifier
+            where 1=1
+            and src.Source_System = '{source_name}'
+            and src.Source_Object = '{source_object}'
+            order by Target_Column_Sort_Order asc
+        )
+        group by Satellite_Identifier,Target_Satellite_Table_Physical_Name,Link_primary_key_physical_name,Source_Table_Physical_Name,Load_Date_Column, effective_date_type, effective_date_attribute 
+
+"""
 
     cursor.execute(query)
     results = cursor.fetchall()
@@ -61,17 +101,34 @@ def generate_satellite_ma_list(cursor, source):
 
     source_name, source_object = source.split("_")
 
-    query = f"""SELECT DISTINCT Satellite_Identifier,Target_Satellite_Table_Physical_Name,Hub_Primary_Key_Physical_Name,GROUP_CONCAT(Target_Column_Physical_Name),
-                Source_Table_Physical_Name,Load_Date_Column
+    query = f"""SELECT DISTINCT 
+                      Satellite_Identifier
+                    , Target_Satellite_Table_Physical_Name
+                    , Hub_Primary_Key_Physical_Name
+                    , GROUP_CONCAT(Target_Column_Physical_Name)
+                    , Source_Table_Physical_Name
+                    , Load_Date_Column
+                    , effective_date_type
+                    , effective_date_attribute 
                 from 
-                (SELECT DISTINCT hs.Satellite_Identifier,hs.Target_Satellite_Table_Physical_Name,hs.Hub_Primary_Key_Physical_Name,hs.Target_Column_Physical_Name,
-                src.Source_Table_Physical_Name,src.Load_Date_Column FROM hub_satellites hs
-                inner join source_data src on src.Source_table_identifier = hs.Source_Table_Identifier
-                where hs.ma_attribute is TRUE -- it is a multiactive attribute
-                and src.Source_System = '{source_name}'
-                and src.Source_Object = '{source_object}'
-                order by Target_Column_Sort_Order asc)
-                group by Satellite_Identifier,Target_Satellite_Table_Physical_Name,Hub_Primary_Key_Physical_Name,Source_Table_Physical_Name,Load_Date_Column
+                (
+                    SELECT DISTINCT 
+                          hs.Satellite_Identifier
+                        , hs.Target_Satellite_Table_Physical_Name
+                        , hs.Hub_Primary_Key_Physical_Name
+                        , hs.Target_Column_Physical_Name
+                        , src.Source_Table_Physical_Name
+                        , src.Load_Date_Column 
+                        , hs.effective_date_type
+                        , hs.effective_date_attribute 
+                    FROM hub_satellites hs
+                    inner join source_data src 
+                        on src.Source_table_identifier = hs.Source_Table_Identifier
+                    where hs.ma_attribute is TRUE -- it is a multiactive attribute
+                    and src.Source_System = '{source_name}'
+                    and src.Source_Object = '{source_object}'
+                    order by Target_Column_Sort_Order asc)
+                    group by Satellite_Identifier,Target_Satellite_Table_Physical_Name,Hub_Primary_Key_Physical_Name,Source_Table_Physical_Name,Load_Date_Column
                 """
 
     cursor.execute(query)
@@ -97,8 +154,10 @@ def generate_satellite(cursor,source, generated_timestamp, rdv_default_schema, m
         payload_list = satellite[3].split(',')
         source_model = satellite[4].lower().replace('load', 'stg')
         loaddate = satellite[5]
+        effective_date_type = satellite[6]
+        effective_date_attribute = satellite[7]
 
-        payload = gen_payload(payload_list)
+        payload = gen_payload(payload_list, effective_date_type, effective_date_attribute, hashkey_column)
 
         if not satellite_ma_list: # This is no ma Satellite
         

@@ -7,7 +7,9 @@
 tracked_hashkey: "@@Hashkey"
 stage_source_model: "@@SourceModel"
 load_type: @@load_completeness_type
-src_edts: 'edts'
+@@edts_attribute
+@@edts_hashkey  
+
 {%- endset -%}
 
 {%- set metadata_dict = fromyaml(yaml_metadata) -%}
@@ -16,10 +18,12 @@ src_edts: 'edts'
 {%- set stage_source_model = metadata_dict['stage_source_model'] -%}
 {%- set src_edts = metadata_dict['src_edts'] -%}
 {%- set load_type = metadata_dict['load_type'] -%}
+{%- set edts_hashkey = metadata_dict['edts_hashkey'] -%}
 
 {{ status_tracking_sat_v0(
                             tracked_hashkey=tracked_hashkey
                             , stage_source_model=stage_source_model
                             , load_type=load_type
                             , src_edts=src_edts 
+                            , edts_hashkey=edts_hashkey
                             ) }}

@@ -12,16 +12,15 @@ src_ma_key:
 @@MaKey
 src_payload: 
 @@Payload
-src_edts: 'edts'
+
 {%- endset -%}
 
 {%- set metadata_dict = fromyaml(yaml_metadata) -%}
 {%- set src_edts = metadata_dict['src_edts'] -%}
 
-{{ ma_sat_v0(source_model=metadata_dict['source_model'],
+{{ datavault4dbt.ma_sat_v0(source_model=metadata_dict['source_model'],
                         parent_hashkey=metadata_dict['parent_hashkey'],
                         src_hashdiff=metadata_dict['src_hashdiff'],
                         src_ma_key=metadata_dict['src_ma_key'],
                         src_payload=metadata_dict['src_payload']
-                        , src_edts=src_edts
                         ) }}

@@ -10,7 +10,7 @@ parent_hashkey: '@@Hashkey'
 src_hashdiff: '@@Hashdiff'
 src_payload: 
 @@Payload
-src_edts: 'edts'
+
 {%- endset -%}
 
 {%- set metadata_dict = fromyaml(yaml_metadata) -%}
@@ -19,11 +19,9 @@ src_edts: 'edts'
 {%- set src_hashdiff = metadata_dict['src_hashdiff'] -%}
 {%- set source_model = metadata_dict['source_model'] -%}
 {%- set src_payload = metadata_dict['src_payload'] -%}
-{%- set src_edts = metadata_dict['src_edts'] -%}
 
 
-{{ sat_v0(parent_hashkey=parent_hashkey,
+{{ datavault4dbt.sat_v0(parent_hashkey=parent_hashkey,
                         src_hashdiff=src_hashdiff,
                         source_model=source_model,
-                        src_payload=src_payload,
-                        src_edts=src_edts) }}
+                        src_payload=src_payload) }}
