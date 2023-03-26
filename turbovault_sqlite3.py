@@ -33,9 +33,6 @@ def connect_sqlite():
     sql_source_data = "SELECT * FROM source_data"
     df_source_data = pd.read_sql_query(sql_source_data, conn)
 
-    sql_refhub_entities = "SELECT * FROM refhub_entities"
-    df_refhub_entities = pd.read_sql_query(sql_refhub_entities, conn)
-
     sql_hub_entities = "SELECT * FROM hub_entities"
     df_hub_entities = pd.read_sql_query(sql_hub_entities, conn)
 
@@ -63,7 +60,6 @@ def connect_sqlite():
     dfs = {
         "source_data": df_source_data,
         "hub_entities": df_hub_entities,
-        "refhub_entities": df_refhub_entities,
         "link_entities": df_link_entities,
         "hub_satellites": df_hub_satellites,
         "link_satellites": df_link_satellites,
