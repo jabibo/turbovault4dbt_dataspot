@@ -1,10 +1,11 @@
 import codecs
 from datetime import datetime
 import os
+import procs.sqlite3.helper as helper
 
 
 def generate_landing_zone(cursor, source,model_path):
-  source_name, source_object = source.split("_")
+  source_name, source_object = helper.source_split(source)
   query = f"""SELECT 
                   source_short
                 , dbt_source_name

@@ -1,10 +1,9 @@
 from numpy import object_
 import os
+import procs.sqlite3.helper as helper
 
 
 def generate_satellite_list(cursor, source):
-
-    source_name, source_object = source.split("_")
 
     query = f"""SELECT 
                       replace(business_key_physical_name, '_bk', '')||'_' ||  source_short ||'_sts' as satellite_identifier
@@ -71,7 +70,7 @@ def generate_st_satellite(cursor,source, generated_timestamp, rdv_default_schema
     
     satellite_list = generate_satellite_list(cursor=cursor, source=source)
     
-    source_name, source_object = source.split("_")
+    source_name, source_object = helper.source_split(source)
     model_path_v0 = model_path.replace('@@entitytype','dwh_04_rv').replace('@@SourceSystem',source_name)
     model_path_v1 = model_path.replace('@@entitytype','dwh_04_rv').replace('@@SourceSystem',source_name)
 

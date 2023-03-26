@@ -1,6 +1,8 @@
 import codecs
 from datetime import datetime
 import os
+import procs.sqlite3.helper as helper
+
 
 def add_payload(payload_string, key, value):
     if key != "" and value != "":
@@ -53,7 +55,7 @@ def generate_load_table_attributes(cursor, source_short ,source_table_name, sele
    
 
 def generate_load(cursor, source, model_path):
-  source_long, source_object = source.split("_")
+  source_long, source_object = helper.source_split(source)
   #print("generate: " + source)
 
   query = f"""SELECT 

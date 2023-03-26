@@ -1,13 +1,15 @@
 import codecs
 from datetime import datetime
 import os
+import procs.sqlite3.helper as helper
+
 # Changes: JB: added edts
 # todo: HKE as Replacement from HK fixed
 def gen_hashed_columns(cursor,source, hashdiff_naming):
   
   command = ""
 
-  source_name, source_object = source.split("_")
+  source_name, source_object = helper.source_split(source)
 
   query = f"""
               SELECT  Target_Primary_Key_Physical_Name
@@ -28,6 +30,7 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
                   on h.Source_Table_Identifier = src.Source_table_identifier
                 WHERE src.Source_System = '{source_name}' 
                 and src.Source_Object = '{source_object}'
+                and not coalesce(is_ref_object, false)
                 ORDER BY h.Target_Column_Sort_Order
               ) 
               GROUP BY Target_Primary_Key_Physical_Name
@@ -128,7 +131,6 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
     if hashkey[2]: 
       command = command + "\t\tis_hashdiff: true\n\t\tcolumns:\n"
 
-      print("hashkey[4]:" + hashkey_name + ":" + hashkey[4])
       if hashkey[3]=='Type 1': 
         bk_list.append(hashkey[4])
 
@@ -152,7 +154,7 @@ def gen_derived_columns(cursor,source):
   
   command = ""
 
-  source_name, source_object = source.split("_")
+  source_name, source_object = helper.source_split(source)
 
   query = f"""
    SELECT 
@@ -220,7 +222,7 @@ def gen_prejoin_columns(cursor, source):
   
   command = ""  
 
-  source_name, source_object = source.split("_")
+  source_name, source_object = helper.source_split(source)
   
   query = f"""SELECT 
               COALESCE(l.Prejoin_Target_Column_Alias,l.Prejoin_Extraction_Column_Name) as Prejoin_Target_Column_Name,
@@ -263,15 +265,16 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
 
   prejoins = gen_prejoin_columns(cursor, source)
 
-  source_name, source_object = source.split("_")
+  source_name, source_object = helper.source_split(source)
+  print(source_name + ':' + source_object)
   
   model_path = model_path.replace("@@entitytype", "dwh_03_stage").replace("@@SourceSystem", source_name)
 
-  query = f"""SELECT Source_Schema_Physical_Name,Source_Table_Physical_Name, Record_Source_Column, Load_Date_Column  FROM source_data src
-                WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'"""
+  query = f"""SELECT Source_Schema_Physical_Name,Source_Table_Physical_Name, Record_Source_Column, Load_Date_Column, source_object
+              FROM source_data src
+              WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'"""
   cursor.execute(query)
   sources = cursor.fetchall()
-
   for row in sources: #sources usually only has one row
     source_schema_name = row[0]
     source_table_name = row[1] #.replace('_ws_', '_webshop_').replace('_rs_', '_roadshow_')
@@ -279,13 +282,13 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
     rs = row[2]
     ldts = row[3]
     timestamp = generated_timestamp
+    business_object = row[4]
     
     with open(os.path.join(".","templates","stage.txt"),"r") as f:
         command_tmp = f.read()
     f.close()
     command = command_tmp.replace("@@RecordSource",rs).replace("@@LoadDate",ldts).replace("@@HashedColumns", hashed_columns).replace("@@derived_columns", derived_columns).replace("@@PrejoinedColumns",prejoins).replace('@@SourceName',source_schema_name).replace('@@SourceTable',source_table_name).replace('@@SCHEMA',stage_default_schema)
 
-    business_object = target_table_name.split('_')[2]      
 
     filename = os.path.join(model_path , business_object, f"{target_table_name.lower()}.sql")
 
@@ -301,4 +304,3 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
       f.write(command.expandtabs(2))
 
     print(f"Created model \'{target_table_name.lower()}.sql\'")
-  

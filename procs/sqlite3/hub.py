@@ -1,19 +1,34 @@
 import os
+import procs.sqlite3.helper as helper
+
 
 def generate_hub_list(cursor, source):
 
-    source_name, source_object = source.split("_")
+    source_name, source_object = helper.source_split(source)
 
-    query = f"""SELECT Hub_Identifier,Target_Hub_table_physical_name,GROUP_CONCAT(Business_Key_Physical_Name)  
+    query = f"""SELECT 
+                      Hub_Identifier
+                    , Target_Hub_table_physical_name
+                    , GROUP_CONCAT(Business_Key_Physical_Name)  
+                    , is_ref_object
+                    , business_object_name
                 from 
-                (SELECT distinct h.Hub_Identifier,h.Target_Hub_table_physical_name,(Business_Key_Physical_Name)  FROM hub_entities h
-                inner join source_data src on src.Source_table_identifier = h.Source_Table_Identifier
-                where 1=1
-                and src.Source_System = '{source_name}'
-                and src.Source_Object = '{source_object}'
-                ORDER BY h.Target_Column_Sort_Order
+                (
+                    SELECT distinct 
+                          h.hub_identifier
+                        , h.Target_Hub_table_physical_name
+                        , h.Business_Key_Physical_Name
+                        , h.is_ref_object
+                        , h.business_object_name
+                    FROM hub_entities h
+                    inner join source_data src 
+                        on src.Source_table_identifier = h.Source_Table_Identifier
+                    where 1=1
+                    and src.Source_System = '{source_name}'
+                    and src.Source_Object = '{source_object}'
+                    ORDER BY h.Target_Column_Sort_Order
                 )
-                group by Hub_Identifier,Target_Hub_table_physical_name
+                group by Hub_Identifier,Target_Hub_table_physical_name, is_ref_object,business_object_name
                 """
 
     cursor.execute(query)
@@ -26,10 +41,19 @@ def generate_source_models(cursor, hub_id):
 
     command = ""
 
-    query = f"""SELECT Source_Table_Physical_Name,GROUP_CONCAT(business_key_physical_name),Static_Part_of_Record_Source_Column
+    query = f"""SELECT 
+                      Source_Table_Physical_Name
+                    , GROUP_CONCAT(business_key_physical_name)
+                    , Static_Part_of_Record_Source_Column
                 FROM 
-                (SELECT distinct src.Source_Table_Physical_Name,h.business_key_physical_name,src.Static_Part_of_Record_Source_Column FROM hub_entities h
-                inner join source_data src on h.Source_Table_Identifier = src.Source_table_identifier
+                (
+                    SELECT distinct 
+                              src.Source_Table_Physical_Name
+                            , h.business_key_physical_name
+                            , src.Static_Part_of_Record_Source_Column 
+                    FROM hub_entities h
+                    inner join source_data src 
+                        on h.Source_Table_Identifier = src.Source_table_identifier
                 where 1=1
                 and Hub_Identifier = '{hub_id}'
                 ORDER BY h.Target_Column_Sort_Order)
@@ -79,31 +103,44 @@ def generate_hub(cursor,source, generated_timestamp,rdv_default_schema,model_pat
 
     hub_list = generate_hub_list(cursor=cursor, source=source)
 
-    source_name, source_object = source.split("_")
+    source_name, source_object = helper.source_split(source)
     model_path = model_path.replace('@@entitytype','dwh_04_rv').replace('@@SourceSystem',source_name)
     for hub in hub_list:
 
         hub_name = hub[1]
         hub_id = hub[0]
+        is_ref_object = str(hub[3]).strip()=='1.0'
+        business_object_name = hub[4]
         bk_list = hub[2].split(',')
         bk_string = ""
         for bk in bk_list:
             bk_string += f"\n\t- '{bk}'"
 
+        print("hub: " + hub_name + ":" + str(str(hub[3])) + ":" + str(is_ref_object))
+
         source_models = generate_source_models(cursor, hub_id).replace('load', 'stg')
 
         hashkey = generate_hashkey(cursor, hub_id)
-    
-        with open(os.path.join(".","templates","hub.txt"),"r") as f:
+        if is_ref_object:
+            template_name = "ref_hub.txt"
+        else:
+            template_name = "hub.txt"
+        with open(os.path.join(".","templates",template_name),"r") as f:
             command_tmp = f.read()
         f.close()
         command = command_tmp.replace('@@Schema', rdv_default_schema).replace('@@SourceModels', source_models).replace('@@Hashkey', hashkey).replace('@@BusinessKeys', bk_string)
-           
-        business_object = hub_name.split('_')[0]
-
-        filename = os.path.join(model_path , business_object, f"{hub_name}.sql")
-                
-        path = os.path.join(model_path, business_object)
+        command = command.replace('@@ref_keys',  bk_string)
+        if business_object_name is None or not is_ref_object:   
+            business_object = hub_name.split('_')[0]
+        else:
+            business_object = business_object_name
+        #print("is_ref_object:" +business_object + " " + str(is_ref_object) )
+        if is_ref_object:
+            path = os.path.join(model_path,"reference", business_object)
+            filename = os.path.join(model_path ,"reference", business_object, f"{hub_name}.sql")
+        else:   
+            path = os.path.join(model_path, business_object)
+            filename = os.path.join(model_path , business_object, f"{hub_name}.sql")
 
         # Check whether the specified path exists or not
         isExist = os.path.exists(path)

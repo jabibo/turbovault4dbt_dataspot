@@ -7,7 +7,7 @@ tracked_entity: '@@tracked_entity'
 hashkey: '@@Hashkey'
 sat_names:@@sats
 snapshot_relation: 'control_snap_v1'
-snapshot_trigger_column: 'is_latest'
+snapshot_trigger_column: 'is_active'
 dimension_key: '@@dimension_key'
 custom_rsrc: 'PIT table for @@pit_identifier'
 

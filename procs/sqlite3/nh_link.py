@@ -1,4 +1,6 @@
 import os
+import procs.sqlite3.helper as helper
+
 
 def generate_source_models(cursor, link_id):
 
@@ -127,7 +129,7 @@ def generate_nh_link(cursor, source, generated_timestamp, rdv_default_schema, mo
     source_models = generate_source_models(cursor, link_id).replace('load', 'stg')
     link_hashkey = generate_link_hashkey(cursor, link_id)
 
-    source_name, source_object = source.split("_")
+    source_name, source_object = helper.source_split(source)
     model_path = model_path.replace('@@entitytype','dwh_04_rv').replace('@@SourceSystem',source_name)
 
 

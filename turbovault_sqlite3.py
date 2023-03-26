@@ -9,6 +9,7 @@ from procs.sqlite3 import load
 from procs.sqlite3 import landing_zone
 from procs.sqlite3 import st_satellite
 from procs.sqlite3 import pit
+
 						  
 import pandas as pd
 import sqlite3
@@ -31,6 +32,9 @@ def connect_sqlite():
 
     sql_source_data = "SELECT * FROM source_data"
     df_source_data = pd.read_sql_query(sql_source_data, conn)
+
+    sql_refhub_entities = "SELECT * FROM refhub_entities"
+    df_refhub_entities = pd.read_sql_query(sql_refhub_entities, conn)
 
     sql_hub_entities = "SELECT * FROM hub_entities"
     df_hub_entities = pd.read_sql_query(sql_hub_entities, conn)
@@ -59,6 +63,7 @@ def connect_sqlite():
     dfs = {
         "source_data": df_source_data,
         "hub_entities": df_hub_entities,
+        "refhub_entities": df_refhub_entities,
         "link_entities": df_link_entities,
         "hub_satellites": df_hub_satellites,
         "link_satellites": df_link_satellites,
@@ -107,11 +112,11 @@ def main():
     generated_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     # Set default values for the arguments
-    default_tasks = ["landing_zone", "Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite", "Pit"]
+    default_tasks = ["landing_zone", "Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite", "Pit", "RefHub"]
     #m default_tasks = ["Load"]
     # default_sources = [["ws_lieferung"]]
 #    default_tasks = [["Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite"]]
-    default_sources = [['webshop_vereinspartner', 'webshop_kunde', 'roadshow_bestellung', 'webshop_bestellung', 'webshop_lieferadresse', 'webshop_lieferung', 'webshop_lieferdienst', 'webshop_wohnort', 'webshop_position', 'webshop_produkt', 'webshop_produktkategorie']]
+    default_sources = [['misc_kategorie_termintreue','webshop_vereinspartner', 'webshop_kunde', 'roadshow_bestellung', 'webshop_bestellung', 'webshop_lieferadresse', 'webshop_lieferung', 'webshop_lieferdienst', 'webshop_wohnort', 'webshop_position', 'webshop_produkt', 'webshop_produktkategorie']]
 
 
     # Set a flag to indicate whether to use Gooey or not
@@ -162,6 +167,7 @@ def main():
     stage_default_schema = "stage"
 
     for source in args.Sources[0]:
+        print("source:" + source)
         if "Stage" in todo:
             stage.generate_stage(cursor,source, generated_timestamp, stage_default_schema, model_path, hashdiff_naming)
         

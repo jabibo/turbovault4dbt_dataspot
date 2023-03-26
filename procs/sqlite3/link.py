@@ -1,11 +1,12 @@
 import os
-
+import procs.sqlite3.helper as helper
 from procs.sqlite3.hub import generate_source_models
 
 
 def generate_link_list(cursor, source):
 
-    source_name, source_object = source.split("_")
+    source_name, source_object = helper.source_split(source)
+
 
     query = f"""SELECT Link_Identifier,Target_link_table_physical_name,GROUP_CONCAT(Target_column_physical_name) FROM
                 (SELECT l.Link_Identifier,Target_link_table_physical_name,Target_column_physical_name
@@ -93,7 +94,7 @@ def generate_link(cursor, source, generated_timestamp, rdv_default_schema, model
     source_models = generate_source_models(cursor, link_id).replace('load', 'stg')
     link_hashkey = generate_link_hashkey(cursor, link_id)
 
-    source_name, source_object = source.split("_")
+    source_name, source_object = helper.source_split(source)
     model_path = model_path.replace('@@entitytype','dwh_04_rv').replace('@@SourceSystem',source_name)
 
 
