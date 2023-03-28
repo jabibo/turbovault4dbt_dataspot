@@ -188,8 +188,8 @@ def main():
         if 'landing_zone' in todo: 
             landing_zone.generate_landing_zone(cursor, source, model_path)
 
-        if 'Pit' in todo:
-            pit.generate_pit(cursor, model_path)
+    if 'Pit' in todo:
+        pit.generate_pit(cursor, model_path)
 
     cursor.close()
 
