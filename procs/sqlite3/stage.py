@@ -95,6 +95,7 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
                   on s.Source_Table_Identifier = src.Source_table_identifier
                 WHERE src.Source_System = '{source_name}' 
                   and src.Source_Object = '{source_object}'
+                  and not ma_attribute   
                 order by s.Target_Column_Sort_Order
               )
               group by Target_Satellite_Table_Physical_Name
@@ -149,6 +150,53 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
           command = command + f"\t\t- {bk}\n"
 
   return command
+
+def gen_multi_active_config(cursor,source):
+  
+  command = ""
+
+  source_name, source_object = helper.source_split(source)
+
+  query = f"""
+              SELECT 
+                  s.source_table_identifier
+                  ,s.target_satellite_table_physical_name 
+                  , s.hub_primary_key_physical_name 
+                  , group_concat(s.target_column_physical_name) target_column_physical_name
+              FROM hub_satellites s
+              inner join source_data src 
+                on s.Source_Table_Identifier = src.Source_table_identifier
+              WHERE src.Source_System = '{source_name}' 
+                and src.Source_Object = '{source_object}'
+                and  ma_attribute
+              """
+  cursor.execute(query)
+  results = cursor.fetchall()
+  print(results)
+  if not results:
+    print("not:",results)
+    return ""
+  command = ""
+
+  for multi_active_config in results:
+    if any(item is None for item in multi_active_config):
+        continue    
+    command += "multi_active_config:\n\t\tmulti_active_key:\n"    
+    main_hashkey_column = multi_active_config[2]
+    multi_active_key_list = multi_active_config[3].split(",")
+
+
+    for multi_active_key in multi_active_key_list:
+      command += f"\t\t\t- {multi_active_key}\n"  
+
+    command +=  f"\t\tmain_hashkey_column: {main_hashkey_column}\n"
+    
+  print(command)
+  
+  return command
+
+
+
 
 def gen_derived_columns(cursor,source):
   
@@ -260,6 +308,8 @@ def gen_prejoin_columns(cursor, source):
 def generate_stage(cursor, source,generated_timestamp,stage_default_schema, model_path,hashdiff_naming):
 
   hashed_columns = gen_hashed_columns(cursor, source, hashdiff_naming)
+  
+  multi_active_config = gen_multi_active_config(cursor, source)
 
   derived_columns = gen_derived_columns(cursor, source)
 
@@ -287,7 +337,7 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
     with open(os.path.join(".","templates","stage.txt"),"r") as f:
         command_tmp = f.read()
     f.close()
-    command = command_tmp.replace("@@RecordSource",rs).replace("@@LoadDate",ldts).replace("@@HashedColumns", hashed_columns).replace("@@derived_columns", derived_columns).replace("@@PrejoinedColumns",prejoins).replace('@@SourceName',source_schema_name).replace('@@SourceTable',source_table_name).replace('@@SCHEMA',stage_default_schema)
+    command = command_tmp.replace("@@RecordSource",rs).replace("@@LoadDate",ldts).replace("@@HashedColumns", hashed_columns).replace("@@MultiActiveConfig", multi_active_config).replace("@@derived_columns", derived_columns).replace("@@PrejoinedColumns",prejoins).replace('@@SourceName',source_schema_name).replace('@@SourceTable',source_table_name).replace('@@SCHEMA',stage_default_schema)
 
 
     filename = os.path.join(model_path , business_object, f"{target_table_name.lower()}.sql")

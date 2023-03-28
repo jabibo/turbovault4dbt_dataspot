@@ -9,6 +9,8 @@ source_model:
 hashed_columns:
 @@HashedColumns
 
+@@MultiActiveConfig
+
 derived_columns:
 @@derived_columns
     cdts:
