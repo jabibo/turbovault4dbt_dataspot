@@ -1,21 +1,44 @@
 import os
 import procs.sqlite3.helper as helper
 from procs.sqlite3.hub import generate_source_models
+TEST_COLUMN = """
+    columns:
+      - name: {hub_hash_key}
+        tests:
+          - not_null
+          - relationships:
+              to: ref('{hub_name}')
+              field: {hub_hash_key}
+"""
+TEST_LINK = """
+version: 2
+models:
+  - name: {table_name}
+    tags: {object_list}
+    description: Link
+    {column_test}
+    tests:
+       - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:{key_list}
 
+"""  
 
 def generate_link_list(cursor, source):
 
     source_name, source_object = helper.source_split(source)
 
 
-    query = f"""SELECT Link_Identifier,Target_link_table_physical_name,GROUP_CONCAT(Target_column_physical_name) FROM
-                (SELECT l.Link_Identifier,Target_link_table_physical_name,Target_column_physical_name
-                from link_entities l
-                inner join source_data src on src.Source_table_identifier = l.Source_Table_Identifier
-                where 1=1
-                and src.Source_System = '{source_name}'
-                and src.Source_Object = '{source_object}'
-                order by l.Target_Column_Sort_Order)
+    query = f"""SELECT Link_Identifier,Target_link_table_physical_name,GROUP_CONCAT(Target_column_physical_name) 
+                FROM
+                (
+                    SELECT l.Link_Identifier,Target_link_table_physical_name,Target_column_physical_name
+                    from link_entities l
+                    inner join source_data src on src.Source_table_identifier = l.Source_Table_Identifier
+                    where 1=1
+                    and src.Source_System = '{source_name}'
+                    and src.Source_Object = '{source_object}'
+                    order by l.Target_Column_Sort_Order
+                )
                 group by Link_Identifier,Target_link_table_physical_name
                 """
 
@@ -29,13 +52,16 @@ def generate_source_models(cursor, link_id):
 
     command = ""
 
-    query = f"""SELECT Source_Table_Physical_Name,GROUP_CONCAT(Hub_primary_key_physical_name),Static_Part_of_Record_Source_Column FROM
-                (SELECT src.Source_Table_Physical_Name,l.Hub_primary_key_physical_name,src.Static_Part_of_Record_Source_Column 
-                FROM link_entities l
-                inner join source_data src on l.Source_Table_Identifier = src.Source_table_identifier
-                where 1=1
-                and Link_Identifier = '{link_id}'
-                ORDER BY Target_Column_Sort_Order)
+    query = f"""SELECT Source_Table_Physical_Name,GROUP_CONCAT(Hub_primary_key_physical_name),Static_Part_of_Record_Source_Column 
+                FROM
+                (
+                    SELECT src.Source_Table_Physical_Name,l.Hub_primary_key_physical_name,src.Static_Part_of_Record_Source_Column 
+                    FROM link_entities l
+                    inner join source_data src on l.Source_Table_Identifier = src.Source_table_identifier
+                    where 1=1
+                    and Link_Identifier = '{link_id}'
+                    ORDER BY Target_Column_Sort_Order
+                )
                 group by Source_Table_Physical_Name,Static_Part_of_Record_Source_Column
                 """
 
@@ -121,3 +147,20 @@ def generate_link(cursor, source, generated_timestamp, rdv_default_schema, model
     with open(filename, 'w') as f:
       f.write(command.expandtabs(2))
       print(f"Created Link Model {link_name}")
+
+    # Test
+    column_test = ''
+    for fk in fk_list:
+        test_column_level = TEST_COLUMN.format(hub_hash_key=fk, hub_name=fk.replace('hk_',''))
+        column_test = column_test + test_column_level
+    object_list=""
+    key_list=""
+    for object in fk_list:
+      object_list += f"\n\t\t\t- {object.replace('hk_', '').replace('_h','')}"
+      key_list += f"\n\t\t\t\t\t\t- {object}"
+    yaml = TEST_LINK.format(table_name=link_name, object_list=object_list, column_test=column_test, key_list=key_list)
+    filename = os.path.join(path,  f"test_{link_name}.yaml")
+           
+    with open(filename, 'w') as f:
+        f.write(yaml.expandtabs(2)) 
+        print(f"Created Link Test {link_name}")                     

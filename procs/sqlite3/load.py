@@ -175,4 +175,4 @@ def generate_load_sql(
   with open(filename, 'w') as f:
     f.write(command.expandtabs(2))
 
-  print(f"Created model {filename.lower()}")
+  print(f"Created model {target_table_name.lower()}")

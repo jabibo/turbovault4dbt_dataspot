@@ -163,7 +163,7 @@ def main():
     stage_default_schema = "stage"
 
     for source in args.Sources[0]:
-        print("source:" + source)
+        #print("source:" + source)
         if "Stage" in todo:
             stage.generate_stage(cursor,source, generated_timestamp, stage_default_schema, model_path, hashdiff_naming)
         

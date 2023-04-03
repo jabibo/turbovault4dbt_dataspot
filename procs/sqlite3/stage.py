@@ -122,7 +122,6 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
               """
   cursor.execute(query)
   results = cursor.fetchall()
-
   for hashkey in results:
   
     hashkey_name = hashkey[0]
@@ -140,7 +139,7 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
     else:
       for bk in bk_list:
         command = command + f"\t\t- {bk}\n"
-
+  
     if hashkey[3]=='Type 1' and not hashkey[2]: 
       hashkey_name = hashkey[0].replace('hk_', 'hke_')
       bk_list = (hashkey[1].split(","))
@@ -172,9 +171,9 @@ def gen_multi_active_config(cursor,source):
               """
   cursor.execute(query)
   results = cursor.fetchall()
-  print(results)
+  # print(results)
   if not results:
-    print("not:",results)
+    # print("not:",results)
     return ""
   command = ""
 
@@ -191,7 +190,7 @@ def gen_multi_active_config(cursor,source):
 
     command +=  f"\t\tmain_hashkey_column: {main_hashkey_column}\n"
     
-  print(command)
+  # print(command)
   
   return command
 
@@ -316,7 +315,7 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
   prejoins = gen_prejoin_columns(cursor, source)
 
   source_name, source_object = helper.source_split(source)
-  print(source_name + ':' + source_object)
+  # print(source_name + ':' + source_object)
   
   model_path = model_path.replace("@@entitytype", "dwh_03_stage").replace("@@SourceSystem", source_name)
 
@@ -333,12 +332,13 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
     ldts = row[3]
     timestamp = generated_timestamp
     business_object = row[4]
-    
+    condition = "where is_check_ok or rsrc ='SYSTEM'"
+
     with open(os.path.join(".","templates","stage.txt"),"r") as f:
         command_tmp = f.read()
     f.close()
     command = command_tmp.replace("@@RecordSource",rs).replace("@@LoadDate",ldts).replace("@@HashedColumns", hashed_columns).replace("@@MultiActiveConfig", multi_active_config).replace("@@derived_columns", derived_columns).replace("@@PrejoinedColumns",prejoins).replace('@@SourceName',source_schema_name).replace('@@SourceTable',source_table_name).replace('@@SCHEMA',stage_default_schema)
-
+    command = command.replace("@@where_condition", condition)
 
     filename = os.path.join(model_path , business_object, f"{target_table_name.lower()}.sql")
 

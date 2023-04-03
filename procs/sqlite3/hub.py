@@ -1,6 +1,26 @@
 import os
 import procs.sqlite3.helper as helper
 
+TEST_HUB = """
+version: 2
+models:
+  - name: {table_name}
+    tags:
+      - {object_name}
+    description: "Hub of {object_name}"
+    columns:
+      - name: {hub_hash_key}
+        description: "Hashkey of {object_name}"
+        tests:
+          - not_null
+    tests:
+       - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+             - ldts          
+             {key_list}
+
+"""    
+
 
 def generate_hub_list(cursor, source):
 
@@ -116,7 +136,7 @@ def generate_hub(cursor,source, generated_timestamp,rdv_default_schema,model_pat
         for bk in bk_list:
             bk_string += f"\n\t- '{bk}'"
 
-        print("hub: " + hub_name + ":" + str(str(hub[3])) + ":" + str(is_ref_object))
+        # print("hub: " + hub_name + ":" + str(str(hub[3])) + ":" + str(is_ref_object))
 
         source_models = generate_source_models(cursor, hub_id).replace('load', 'stg')
 
@@ -152,3 +172,19 @@ def generate_hub(cursor,source, generated_timestamp,rdv_default_schema,model_pat
         with open(filename, 'w') as f:
             f.write(command.expandtabs(2))
             print(f"Created Hub Model {hub_name}")  
+ 
+        ### test
+
+        if is_ref_object:
+            hashkey = bk_list[0]
+            key_list = bk_string.strip()
+        else:   
+            hashkey = hashkey
+            key_list = '- ' + hashkey
+
+        filename = os.path.join(path, f"test_{hub_name}.yaml")
+        yaml = TEST_HUB.format(table_name=hub_name, object_name=business_object, hub_hash_key=hashkey, key_list=key_list)
+
+        with open(filename, 'w') as f:
+            f.write(yaml.expandtabs(2)) 
+            print(f"Created Hub Test {hub_name}") 
