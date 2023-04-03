@@ -9,6 +9,7 @@ from procs.sqlite3 import load
 from procs.sqlite3 import landing_zone
 from procs.sqlite3 import st_satellite
 from procs.sqlite3 import pit
+from procs.sqlite3 import sns
 
 						  
 import pandas as pd
@@ -108,7 +109,7 @@ def main():
     generated_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     # Set default values for the arguments
-    default_tasks = ["landing_zone", "Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite", "Pit", "RefHub"]
+    default_tasks = ["landing_zone", "Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite", "Pit", "SNS", "RefHub"]
     #m default_tasks = ["Load"]
     # default_sources = [["ws_lieferung"]]
 #    default_tasks = [["Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite"]]
@@ -190,6 +191,9 @@ def main():
 
     if 'Pit' in todo:
         pit.generate_pit(cursor, model_path)
+        
+    if 'SNS' in todo:
+        sns.generate_sns(cursor, model_path)        
 
     cursor.close()
 

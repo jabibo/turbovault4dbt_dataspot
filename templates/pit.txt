@@ -1,3 +1,5 @@
+{# template pit Version:0.1.0 #}
+{# automatically generated based on dataspot#}
 {{ config(materialized='incremental',
         post_hook="{{ datavault4dbt.clean_up_pit('control_snap_v1') }}") }}
 
