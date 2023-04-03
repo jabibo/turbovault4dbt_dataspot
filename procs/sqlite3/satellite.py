@@ -1,7 +1,26 @@
 from numpy import object_
 import os
 import procs.sqlite3.helper as helper
-
+TEST_SAT = """
+version: 2
+models:
+  - name: {table_name}
+    tags:
+      - {object_name}
+    description: Satellit for {object_name}
+    columns:
+      - name: {hub_hash_key}
+        tests:
+          - not_null
+          - relationships:
+              to: ref('{object_name}')
+              field: {hub_hash_key}
+    tests:
+       - dbt_utils.unique_combination_of_columns:
+          combination_of_columns:
+             - {hub_hash_key}
+             - ldts
+"""    
 def gen_payload(payload_list,effective_date_type='', effective_date_attribute='', hashkey_column=''):
     payload_string = ''
     
@@ -210,6 +229,20 @@ def generate_satellite(cursor,source, generated_timestamp, rdv_default_schema, m
                     print(f"Created Satellite Model {satellite_model_name_v0}")
                 else:
                     print(f"Created Reference Satellite Model {satellite_model_name_v0}")
+        # Create Test 
+            if not is_ref_object:
+                filename = os.path.join(model_path_v0 , business_object, f"test_{satellite_model_name_v0}.yaml")
+                business_object = business_object + '_h'
+
+            else:
+                filename = os.path.join(model_path_v0 , "reference", business_object, f"test_{satellite_model_name_v0}.yaml")
+                business_object = business_object + '_r'
+
+            yaml = TEST_SAT.format(table_name=satellite_model_name_v0, object_name=business_object, hub_hash_key=hashkey_column)
+
+            with open(filename, 'w') as f:
+                f.write(yaml.expandtabs(2)) 
+                print(f"Created Sat Test {satellite_model_name_v0}")                     
             #Satellite_v1
             # with open(os.path.join(".","templates","sat_v1.txt"),"r") as f:
             #     command_tmp = f.read()
@@ -247,10 +280,10 @@ def generate_satellite(cursor,source, generated_timestamp, rdv_default_schema, m
                 
             satellite_model_name_splitted_list = satellite_name.split('_')
             satellite_model_name_splitted_list[-1] = 'ms'        
-            print(satellite_model_name_splitted_list)
+            # print(satellite_model_name_splitted_list)
             satellite_model_name_v1 = '_'.join(satellite_model_name_splitted_list)
             #satellite_model_name_splitted_list[-2] += '0'
-            print(satellite_model_name_splitted_list)
+            # print(satellite_model_name_splitted_list)
             #satellite_model_name_splitted_list.insert(-1, 'm')
             satellite_model_name_v0 = '_'.join(satellite_model_name_splitted_list)
             
