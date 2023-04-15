@@ -4,7 +4,7 @@
 source_model_source: '@@SourceTable'
 load_type: @@load_completeness_type
 source_model_target:
-@@TargetStructure
+@@target_object_model
 {%- endset -%}
 
 {% set metadata_dict = fromyaml(yaml_metadata) %}

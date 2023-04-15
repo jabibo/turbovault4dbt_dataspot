@@ -5,7 +5,7 @@ import procs.sqlite3.helper as helper
 
 # Changes: JB: added edts
 # todo: HKE as Replacement from HK fixed
-def gen_hashed_columns(cursor,source, hashdiff_naming):
+def gen_target_objects(cursor,source, hashdiff_naming):
   
   command = ""
 
@@ -122,33 +122,20 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
               """
   cursor.execute(query)
   results = cursor.fetchall()
-  for hashkey in results:
-  
-    hashkey_name = hashkey[0]
-    bk_list = hashkey[1].split(",")
-
-    command = command + f"\t{hashkey_name}:\n"
-    if hashkey[2]: 
-      command = command + "\t\tis_hashdiff: true\n\t\tcolumns:\n"
-
-      if hashkey[3]=='Type 1': 
-        bk_list.append(hashkey[4])
-
+  target_model = ""
+  for target_model_hk in results:
+    if target_model_hk[0][-2:] in ('_l','_h'):
+      target_model = target_model + "\t" + target_model_hk[0].replace('hk_','') + ":\n"
+      target_model = target_model + "\t\tbusiness_object:\n"
+      bk_list = target_model_hk[1].split(",")
       for bk in bk_list:
-        command = command + f"\t\t\t- {bk}\n"  
-    else:
-      for bk in bk_list:
-        command = command + f"\t\t- {bk}\n"
-  
-    if hashkey[3]=='Type 1' and not hashkey[2]: 
-      hashkey_name = hashkey[0].replace('hk_', 'hke_')
-      bk_list = (hashkey[1].split(","))
-      bk_list.append(hashkey[4])
-      command = command + f"\t{hashkey_name}:\n"
-      for bk in bk_list:
-          command = command + f"\t\t- {bk}\n"
+        if target_model_hk[0][-2:] == '_h':
+          target_model = target_model + "\t\t\t" + "- " + target_model_hk[0].replace("hk_","").replace("_h","").replace("_l","") + ": " + bk + "\n"
+        else:
+          target_model = target_model + "\t\t\t" + "- " + bk.replace('_bk',"") + ": " + "hk_" + bk.replace("_bk","") + "_h" + "\n"
+      target_model = target_model + "@@satellites(" + source_name + ":" + source_object + "->" + target_model_hk[0].replace('hk_','') + ")" + "\n" 
 
-  return command
+  return target_model
 
 def gen_multi_active_config(cursor,source):
   
@@ -306,7 +293,8 @@ def gen_prejoin_columns(cursor, source):
 
 def generate_yeditest(cursor, source,generated_timestamp,stage_default_schema, model_path,hashdiff_naming):
 
-  hashed_columns = gen_hashed_columns(cursor, source, hashdiff_naming)
+  target_object_model = ""
+  target_object_model = gen_target_objects(cursor, source, hashdiff_naming)
   
   multi_active_config = gen_multi_active_config(cursor, source)
 
@@ -319,7 +307,7 @@ def generate_yeditest(cursor, source,generated_timestamp,stage_default_schema, m
   
   model_path = model_path.replace("models", "tests").replace("@@entitytype", "yedi").replace("@@SourceSystem", source_name)
 
-  query = f"""SELECT Source_Schema_Physical_Name,Source_Table_Physical_Name, Record_Source_Column, Load_Date_Column, source_object
+  query = f"""SELECT Source_Schema_Physical_Name,Source_Table_Physical_Name, Record_Source_Column, Load_Date_Column, source_object, load_completeness_type
               FROM source_data src
               WHERE src.Source_System = '{source_name}' and src.Source_Object = '{source_object}'"""
   cursor.execute(query)
@@ -332,13 +320,16 @@ def generate_yeditest(cursor, source,generated_timestamp,stage_default_schema, m
     ldts = row[3]
     timestamp = generated_timestamp
     business_object = row[4]
+    load_completeness_type = row[5]
     condition = ""
 
     with open(os.path.join(".","templates","yeditest.txt"),"r") as f:
         command_tmp = f.read()
     f.close()
-    command = command_tmp.replace("@@RecordSource",rs).replace("@@LoadDate",ldts).replace("@@HashedColumns", hashed_columns).replace("@@MultiActiveConfig", multi_active_config).replace("@@derived_columns", derived_columns).replace("@@PrejoinedColumns",prejoins).replace('@@SourceName',source_schema_name).replace('@@SourceTable',source_table_name).replace('@@SCHEMA',stage_default_schema)
-
+    command = command_tmp#.replace("@@RecordSource",rs).replace("@@LoadDate",ldts).replace("@@HashedColumns", hashed_columns).replace("@@MultiActiveConfig", multi_active_config).replace("@@derived_columns", derived_columns).replace("@@PrejoinedColumns",prejoins).replace('@@SourceName',source_schema_name).replace('@@SCHEMA',stage_default_schema)
+    command = command.replace("@@load_completeness_type", load_completeness_type)
+    command = command.replace("@@target_object_model", target_object_model)
+    command = command.replace('@@SourceTable',source_table_name)
     filename = os.path.join(model_path , business_object, f"{target_table_name.lower()}.sql")
 
     path =os.path.join(model_path, business_object)
