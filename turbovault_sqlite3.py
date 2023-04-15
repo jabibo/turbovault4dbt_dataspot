@@ -10,7 +10,7 @@ from procs.sqlite3 import landing_zone
 from procs.sqlite3 import st_satellite
 from procs.sqlite3 import pit
 from procs.sqlite3 import sns
-
+from procs.sqlite3 import yeditest
 						  
 import pandas as pd
 import sqlite3
@@ -109,7 +109,7 @@ def main():
     generated_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     # Set default values for the arguments
-    default_tasks = ["landing_zone", "Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite", "Pit", "SNS", "RefHub"]
+    default_tasks = ["landing_zone", "Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite", "Pit", "SNS", "RefHub", "yeditest"]
     #m default_tasks = ["Load"]
     # default_sources = [["ws_lieferung"]]
 #    default_tasks = [["Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite"]]
@@ -137,7 +137,7 @@ def main():
             help="Select the entities which you want to generate",
             action="append",
             widget="Listbox",
-            choices=["Stage", "Hub", "Satellite", "Link", "non_historized_Link", "landing_zone", "Load", "Status_Tracking_Satellite", "Pit"],
+            choices=["Stage", "Hub", "Satellite", "Link", "non_historized_Link", "landing_zone", "Load", "Status_Tracking_Satellite", "Pit", "yeditest"],
             default=default_tasks,
             nargs="*",
             gooey_options={"height": 300},
@@ -189,6 +189,8 @@ def main():
         if 'landing_zone' in todo: 
             landing_zone.generate_landing_zone(cursor, source, model_path)
 
+        if 'yeditest' in todo: 
+            yeditest.generate_yeditest(cursor,source, generated_timestamp, stage_default_schema, model_path, hashdiff_naming)
     if 'Pit' in todo:
         pit.generate_pit(cursor, model_path)
         
