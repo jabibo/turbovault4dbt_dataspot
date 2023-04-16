@@ -17,6 +17,7 @@ def gen_target_objects(cursor,source, hashdiff_naming):
                     , IS_SATELLITE 
                     , effective_date_type
                     , effective_date_attribute
+                    , source_system_short
               FROM 
               (
                 SELECT 
@@ -25,6 +26,7 @@ def gen_target_objects(cursor,source, hashdiff_naming):
                   , FALSE as IS_SATELLITE
                   , src.effective_date_type
                   , src.effective_date_attribute
+                  , src.source_system_short
                 FROM hub_entities h
                 inner join source_data src 
                   on h.Source_Table_Identifier = src.Source_table_identifier
@@ -40,6 +42,7 @@ def gen_target_objects(cursor,source, hashdiff_naming):
                     , IS_SATELLITE 
                     , effective_date_type
                     , effective_date_attribute
+                    , source_system_short
               FROM
               (
                 SELECT  l.Target_Primary_Key_Physical_Name
@@ -47,6 +50,7 @@ def gen_target_objects(cursor,source, hashdiff_naming):
                       , FALSE as IS_SATELLITE
                       , src.effective_date_type
                       , src.effective_date_attribute
+                      , src.source_system_short
                 FROM link_entities l
                 inner join source_data src
                   on l.Source_Table_Identifier = src.Source_table_identifier
@@ -61,6 +65,7 @@ def gen_target_objects(cursor,source, hashdiff_naming):
                     , IS_SATELLITE 
                     , effective_date_type
                     , effective_date_attribute
+                    , source_system_short
               FROM
               (
                 SELECT  l.link_primary_key_physical_name
@@ -68,6 +73,7 @@ def gen_target_objects(cursor,source, hashdiff_naming):
                         , FALSE as IS_SATELLITE
                         , src.effective_date_type
                         , src.effective_date_attribute
+                        , src.source_system_short
                 FROM nh_link_entities l
                 inner join source_data src 
                   on l.Source_Table_Identifier = src.Source_table_identifier
@@ -83,6 +89,7 @@ def gen_target_objects(cursor,source, hashdiff_naming):
                     , IS_SATELLITE 
                     , effective_date_type
                     , effective_date_attribute
+                    , source_system_short
               FROM 
               (
                 SELECT '{hashdiff_naming.replace("@@SatName", "")}' || s.Target_Satellite_Table_Physical_Name as Target_Satellite_Table_Physical_Name
@@ -90,7 +97,8 @@ def gen_target_objects(cursor,source, hashdiff_naming):
                       , TRUE as IS_SATELLITE
                       , src.effective_date_type
                       , src.effective_date_attribute
-                FROM hub_satellites s
+                      , src.source_system_short
+              FROM hub_satellites s
                 inner join source_data src 
                   on s.Source_Table_Identifier = src.Source_table_identifier
                 WHERE src.Source_System = '{source_name}' 
@@ -105,6 +113,7 @@ def gen_target_objects(cursor,source, hashdiff_naming):
                     , IS_SATELLITE 
                     , effective_date_type
                     , effective_date_attribute
+                    , source_system_short
               FROM
               (
                 SELECT  '{hashdiff_naming.replace("@@SatName", "")}' || s.Target_Satellite_Table_Physical_Name as Target_Satellite_Table_Physical_Name
@@ -112,6 +121,7 @@ def gen_target_objects(cursor,source, hashdiff_naming):
                       , TRUE as IS_SATELLITE
                       , src.effective_date_type
                       , src.effective_date_attribute
+                      , src.source_system_short
               FROM link_satellites s
               inner join source_data src 
                 on s.Source_Table_Identifier = src.Source_table_identifier
@@ -121,21 +131,39 @@ def gen_target_objects(cursor,source, hashdiff_naming):
               group by Target_Satellite_Table_Physical_Name
               """
   cursor.execute(query)
-  results = cursor.fetchall()
-  target_model = ""
-  for target_model_hk in results:
-    if target_model_hk[0][-2:] in ('_l','_h'):
-      target_model = target_model + "\t" + target_model_hk[0].replace('hk_','') + ":\n"
-      target_model = target_model + "\t\tbusiness_object:\n"
-      bk_list = target_model_hk[1].split(",")
-      for bk in bk_list:
-        if target_model_hk[0][-2:] == '_h':
-          target_model = target_model + "\t\t\t" + "- " + target_model_hk[0].replace("hk_","").replace("_h","").replace("_l","") + ": " + bk + "\n"
-        else:
-          target_model = target_model + "\t\t\t" + "- " + bk.replace('_bk',"") + ": " + "hk_" + bk.replace("_bk","") + "_h" + "\n"
-      target_model = target_model + "@@satellites(" + source_name + ":" + source_object + "->" + target_model_hk[0].replace('hk_','') + ")" + "\n" 
+  target_model_list = cursor.fetchall()
+  target_model_def = ""
+  satellites_dict = {}
+  satellite_dict = {}
+  for target_model in target_model_list:
+    source_system_short = target_model[5]
+    target_business_object = target_model[0].replace('hd_','').replace('_' + source_system_short,'').replace('_s','').replace('_l','').replace('_h','')
+    if target_model[0][-2:] in ('_s'):
+      satellite_dict[target_model[0].replace('hd_','')] = target_model[1]
+    satellites_dict[target_business_object] = satellite_dict
 
-  return target_model
+  for target_model in target_model_list:
+    source_system_short = target_model[5]
+    target_business_object = target_model[0].replace('hk_','').replace('_' + source_system_short,'').replace('_s','').replace('_l','').replace('_h','')
+    if target_model[0][-2:] in ('_l','_h'):
+      target_model_def = target_model_def + "\t" + target_model[0].replace('hk_','') + ":\n"
+      target_model_def = target_model_def + "\t\tbusiness_object:\n"
+      bk_list = target_model[1].split(",")
+      for bk in bk_list:
+        if target_model[0][-2:] == '_h':
+          target_model_def = target_model_def + "\t\t\t" + "- " + target_model[0].replace("hk_","").replace("_h","").replace("_l","") + ": " + bk + "\n"
+        else:
+          target_model_def = target_model_def + "\t\t\t" + "- " + bk.replace('_bk',"") + ": " + "hk_" + bk.replace("_bk","") + "_h" + "\n"
+      target_model_def = target_model_def + "\t\tsatellites:\n"
+      satellite_dict = satellites_dict.get(target_business_object)
+      if not satellite_dict is None:
+        for sat in satellite_dict:
+          attribute_list = satellite_dict[sat].split(",")
+          target_model_def = target_model_def + "\t\t\t" + str(sat) + ":\n"
+          for attribute in attribute_list:
+            target_model_def = target_model_def + "\t\t\t\t" + "- " + attribute + "\n"
+
+  return target_model_def
 
 def gen_multi_active_config(cursor,source):
   
@@ -305,7 +333,7 @@ def generate_yeditest(cursor, source,generated_timestamp,stage_default_schema, m
   source_name, source_object = helper.source_split(source)
   # print(source_name + ':' + source_object)
   
-  model_path = model_path.replace("models", "tests").replace("@@entitytype", "yedi").replace("@@SourceSystem", source_name)
+  model_path = model_path.replace("models", "tests").replace("@@entitytype/", "yedi").replace("@@SourceSystem", source_name)
 
   query = f"""SELECT Source_Schema_Physical_Name,Source_Table_Physical_Name, Record_Source_Column, Load_Date_Column, source_object, load_completeness_type
               FROM source_data src
@@ -330,7 +358,7 @@ def generate_yeditest(cursor, source,generated_timestamp,stage_default_schema, m
     command = command.replace("@@load_completeness_type", load_completeness_type)
     command = command.replace("@@target_object_model", target_object_model)
     command = command.replace('@@SourceTable',source_table_name)
-    filename = os.path.join(model_path , business_object, f"{target_table_name.lower()}.sql")
+    filename = os.path.join(model_path, f"{target_table_name.lower()}.sql")
 
     path =os.path.join(model_path, business_object)
 
