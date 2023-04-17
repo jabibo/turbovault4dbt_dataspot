@@ -3,8 +3,47 @@ from datetime import datetime
 import os
 import procs.sqlite3.helper as helper
 
-# Changes: JB: added edts
-# todo: HKE as Replacement from HK fixed
+def generate_status_tracking_satellite_list(cursor, source, object_identifier):
+
+    query = f"""
+    SELECT distinct
+          replace(business_key_physical_name, '_bk', '')||'_' ||  source_short ||'_sts' as satellite_identifier
+        , he.source_table_identifier
+        , replace(business_key_physical_name, '_bk', '') as object_identifier
+  from hub_entities he
+  inner join source_data sd
+    on he.source_table_identifier = sd.source_table_identifier
+  where has_statustracking
+  and he.source_table_identifier='{source}'
+  and replace(business_key_physical_name, '_bk', '') = '{object_identifier}'
+  union
+  SELECT
+      satellite_identifier
+    , source_table_identifier
+    , object_identifier
+  from
+  (
+    SELECT distinct
+            link_identifier as object_identifier
+          , link_identifier||'_'||source_short||'_sts' as satellite_identifier
+          , source_data.source_table_identifier
+    from link_entities
+    inner join source_data
+        on link_entities.Source_Table_Identifier = source_data.source_table_identifier
+    where link_entities.has_statustracking
+    and link_entities.source_table_identifier='{source}'
+  ) a
+  where satellite_identifier is not null
+  and object_identifier = '{object_identifier}'
+"""
+
+	                
+
+    cursor.execute(query)
+    results = cursor.fetchall()
+
+    return results
+
 def gen_target_objects(cursor,source, hashdiff_naming):
   
   command = ""
@@ -137,14 +176,14 @@ def gen_target_objects(cursor,source, hashdiff_naming):
   satellite_dict = {}
   for target_model in target_model_list:
     source_system_short = target_model[5]
-    target_business_object = target_model[0].replace('hd_','').replace('_' + source_system_short,'').replace('_s','').replace('_l','').replace('_h','')
-    if target_model[0][-2:] in ('_s'):
+    target_business_object = target_model[0].replace('hd_','').replace('_' + source_system_short,'').replace('_s','').replace('_ms','').replace('_l','').replace('_h','')
+    if target_model[0][-2:] in ('_s') or target_model[0][-3:] in ('_ms'):
       satellite_dict[target_model[0].replace('hd_','')] = target_model[1]
     satellites_dict[target_business_object] = satellite_dict
 
   for target_model in target_model_list:
     source_system_short = target_model[5]
-    target_business_object = target_model[0].replace('hk_','').replace('_' + source_system_short,'').replace('_s','').replace('_l','').replace('_h','')
+    target_business_object = target_model[0].replace('hk_','').replace('_' + source_system_short,'').replace('_s','').replace('_ms','').replace('_l','').replace('_h','')
     if target_model[0][-2:] in ('_l','_h'):
       target_model_def = target_model_def + "\t" + target_model[0].replace('hk_','') + ":\n"
       target_model_def = target_model_def + "\t\tbusiness_object:\n"
@@ -162,6 +201,9 @@ def gen_target_objects(cursor,source, hashdiff_naming):
           target_model_def = target_model_def + "\t\t\t" + str(sat) + ":\n"
           for attribute in attribute_list:
             target_model_def = target_model_def + "\t\t\t\t" + "- " + attribute + "\n"
+      sts_satellite_list = generate_status_tracking_satellite_list(cursor=cursor, source=source, object_identifier=target_business_object)
+      for sts_sat in sts_satellite_list:
+        target_model_def = target_model_def + "\t\t\t\t" + "- " + sts_sat[0]+ "\n"
 
   return target_model_def
 
@@ -360,7 +402,7 @@ def generate_yeditest(cursor, source,generated_timestamp,stage_default_schema, m
     command = command.replace('@@SourceTable',source_table_name)
     filename = os.path.join(model_path, f"{target_table_name.lower()}.sql")
 
-    path =os.path.join(model_path, business_object)
+    path =os.path.join(model_path)
 
     # Check whether the specified path exists or not
     isExist = os.path.exists(path)
