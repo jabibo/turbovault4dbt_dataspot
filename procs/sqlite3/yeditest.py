@@ -142,7 +142,6 @@ def gen_target_objects(cursor,source, hashdiff_naming):
                   on s.Source_Table_Identifier = src.Source_table_identifier
                 WHERE src.Source_System = '{source_name}' 
                   and src.Source_Object = '{source_object}'
-                  and not ma_attribute   
                 order by s.Target_Column_Sort_Order
               )
               group by Target_Satellite_Table_Physical_Name
@@ -201,9 +200,10 @@ def gen_target_objects(cursor,source, hashdiff_naming):
           target_model_def = target_model_def + "\t\t\t" + str(sat) + ":\n"
           for attribute in attribute_list:
             target_model_def = target_model_def + "\t\t\t\t" + "- " + attribute + "\n"
+
       sts_satellite_list = generate_status_tracking_satellite_list(cursor=cursor, source=source, object_identifier=target_business_object)
       for sts_sat in sts_satellite_list:
-        target_model_def = target_model_def + "\t\t\t\t" + "- " + sts_sat[0]+ "\n"
+        target_model_def = target_model_def + "\t\t\t" + sts_sat[0]+ ":\n"
 
   return target_model_def
 
