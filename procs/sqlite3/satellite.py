@@ -75,6 +75,7 @@ def generate_satellite_list(cursor, source):
         inner join source_data src 
             on src.Source_table_identifier = hs.Source_Table_Identifier
         where hs.ma_attribute is false -- it is no multiactive attribute
+        and replace(Hub_Primary_Key_Physical_Name, '_parent_', '') = Hub_Primary_Key_Physical_Name -- filter out parent of parent_child entity        
         and src.Source_System = '{source_name}'
         and src.Source_Object = '{source_object}'
         order by hs.Target_Column_Sort_Order asc

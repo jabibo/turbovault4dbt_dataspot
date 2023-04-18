@@ -17,6 +17,8 @@ def generate_pit_list(cursor):
                     , target_primary_key_physical_name as hashkey
                     , replace(target_primary_key_physical_name, '_h', '_d') dimension_key 
                     from hub_entities
+                    where is_nh_link=0
+                    and parent_child_hierarchy=''
                     union all
                     select distinct
                     link_identifier as identifier

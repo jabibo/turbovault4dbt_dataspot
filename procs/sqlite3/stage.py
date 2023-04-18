@@ -85,7 +85,8 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
                     , effective_date_attribute
               FROM 
               (
-                SELECT '{hashdiff_naming.replace("@@SatName", "")}' || s.Target_Satellite_Table_Physical_Name as Target_Satellite_Table_Physical_Name
+                SELECT DISTINCT  
+                	    '{hashdiff_naming.replace("@@SatName", "")}' || s.Target_Satellite_Table_Physical_Name as Target_Satellite_Table_Physical_Name
                       , s.Source_Column_Physical_Name
                       , TRUE as IS_SATELLITE
                       , src.effective_date_type
