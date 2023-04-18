@@ -44,6 +44,7 @@ def generate_hub_list(cursor, source):
                     inner join source_data src 
                         on src.Source_table_identifier = h.Source_Table_Identifier
                     where 1=1
+                    and is_nh_link=0                    
                     and src.Source_System = '{source_name}'
                     and src.Source_Object = '{source_object}'
                     ORDER BY h.Target_Column_Sort_Order
