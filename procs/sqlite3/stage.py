@@ -19,7 +19,7 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
                     , effective_date_attribute
               FROM 
               (
-                SELECT 
+                SELECT DISTINCT
                     h.Target_Primary_Key_Physical_Name
                   , h.Source_Column_Physical_Name
                   , FALSE as IS_SATELLITE
