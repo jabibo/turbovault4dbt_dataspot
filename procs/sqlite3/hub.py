@@ -44,6 +44,8 @@ def generate_hub_list(cursor, source):
                     inner join source_data src 
                         on src.Source_table_identifier = h.Source_Table_Identifier
                     where 1=1
+                    and is_nh_link=0
+                    and parent_child_hierarchy =''                    
                     and src.Source_System = '{source_name}'
                     and src.Source_Object = '{source_object}'
                     ORDER BY h.Target_Column_Sort_Order
@@ -64,20 +66,23 @@ def generate_source_models(cursor, hub_id):
     query = f"""SELECT 
                       Source_Table_Physical_Name
                     , GROUP_CONCAT(business_key_physical_name)
+                    , target_primary_key_physical_name  
                     , Static_Part_of_Record_Source_Column
                 FROM 
                 (
                     SELECT distinct 
                               src.Source_Table_Physical_Name
                             , h.business_key_physical_name
+                            , h.target_primary_key_physical_name 
                             , src.Static_Part_of_Record_Source_Column 
+                            , parent_child_hierarchy
                     FROM hub_entities h
                     inner join source_data src 
                         on h.Source_Table_Identifier = src.Source_table_identifier
                 where 1=1
                 and Hub_Identifier = '{hub_id}'
                 ORDER BY h.Target_Column_Sort_Order)
-                group by Source_Table_Physical_Name,Static_Part_of_Record_Source_Column
+                group by Source_Table_Physical_Name,Static_Part_of_Record_Source_Column, parent_child_hierarchy
                 """
 
     cursor.execute(query)
@@ -86,20 +91,23 @@ def generate_source_models(cursor, hub_id):
     for source_table_row in results:
         source_table_name = source_table_row[0].lower()
         bk_columns = source_table_row[1].split(',')
-
+        hk_column = source_table_row[2]
         if len(bk_columns) > 1: 
             bk_col_output = ""
             for bk in bk_columns: 
                 bk_col_output += f"\n\t\t\t- '{bk}'"
         else:
             bk_col_output = "'" + bk_columns[0] + "'"
-        
-        command += f"\n\t{source_table_name}:\n\t\tbk_columns: {bk_col_output}"
-
-        rsrc_static = source_table_row[2]
+        if hk_column.startswith('hk_'):
+            command += f"\n\t\t- name: {source_table_name}\n\t\t\thk_column: {hk_column}"
+            command += f"\n\t\t\tbk_columns: {bk_col_output}"
+        else:
+            command += f"\n\t\t- name: {source_table_name}\n\t\t\tbk_columns: {bk_col_output}"
+                        
+        rsrc_static = source_table_row[3]
 
         if rsrc_static != '':
-            command += f"\n\t\trsrc_static: '{rsrc_static}'"
+            command += f"\n\t\t\trsrc_static: '{rsrc_static}'"
 
     return command
 
@@ -108,7 +116,8 @@ def generate_hashkey(cursor, hub_id):
 
     query = f"""SELECT DISTINCT Target_Primary_Key_Physical_Name 
                 FROM hub_entities
-                WHERE hub_identifier = '{hub_id}'"""
+                WHERE parent_child_hierarchy <>'parent'
+                and hub_identifier = '{hub_id}'"""
 
     cursor.execute(query)
     results = cursor.fetchall()
