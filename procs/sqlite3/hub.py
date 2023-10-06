@@ -16,7 +16,6 @@ models:
     tests:
        - dbt_utils.unique_combination_of_columns:
           combination_of_columns:
-             - ldts          
              {key_list}
 
 """    
