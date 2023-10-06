@@ -2,6 +2,7 @@ import os
 import procs.sqlite3.helper as helper
 
 TEST_HUB = """
+# automatically generated based on dataspot
 version: 2
 models:
   - name: {table_name}

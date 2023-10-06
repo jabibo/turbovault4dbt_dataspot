@@ -11,6 +11,7 @@ TEST_COLUMN = """
               field: {hub_hash_key}
 """
 TEST_LINK = """
+# automatically generated based on dataspot
 version: 2
 models:
   - name: {table_name}
