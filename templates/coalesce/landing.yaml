@@ -1,0 +1,21 @@
+id: @@landing_table_uuid
+name: @@landing_table_name
+operation:
+  database: ""
+  dataset: ""
+  deployEnabled: true
+  description: ""
+  locationID: ""
+  locationName: @@landing_location
+  metadata:
+    columns:
+@@columns
+    join:
+      joinCondition: FROM {{ ref('@@landing_location', '@@landing_table_name') }}
+  name: @@landing_table_name
+  schema: ""
+  sqlType: Source
+  table: @@landing_table_name
+  type: sourceInput
+type: Node
+version: 1

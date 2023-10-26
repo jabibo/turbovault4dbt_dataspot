@@ -5,24 +5,23 @@ from procs.sqlite3 import satellite
 from procs.sqlite3 import hub
 from procs.sqlite3 import link
 from procs.sqlite3 import nh_link
-from procs.sqlite3 import load
-from procs.sqlite3 import landing_zone
+from procs.sqlite3.coalesce import load
+from procs.sqlite3.coalesce import landing
 from procs.sqlite3 import st_satellite
 from procs.sqlite3 import pit
 from procs.sqlite3 import sns
 from procs.sqlite3 import yeditest
 						  
 import pandas as pd
+#import sqlean as sqlite3
 import sqlite3
 from logging import Logger
 from gooey import Gooey
 from gooey import GooeyParser
 from datetime import datetime
 import time
-import argparse
 
 image_path = os.path.join(os.path.dirname(__file__), "images")
-
 
 def connect_sqlite():
     config = ConfigParser()
@@ -31,8 +30,11 @@ def connect_sqlite():
     conn = sqlite3.connect(os.path.join(db_path, "dataspotparameters.db"))
     cursor = conn.cursor()
 
-    sql_source_data = "SELECT * FROM source_data"
-    df_source_data = pd.read_sql_query(sql_source_data, conn)
+    sql_source_tables = "SELECT * FROM source_tables"
+    df_source_tables = pd.read_sql_query(sql_source_tables, conn)
+    
+    sql_source_table_attributes = "SELECT * FROM source_table_attributes"
+    df_source_table_attributes = pd.read_sql_query(sql_source_table_attributes, conn)
 
     sql_hub_entities = "SELECT * FROM hub_entities"
     df_hub_entities = pd.read_sql_query(sql_hub_entities, conn)
@@ -49,25 +51,16 @@ def connect_sqlite():
     sql_nh_link_entities = "SELECT * FROM nh_link_entities"
     df_nh_link_entities = pd.read_sql_query(sql_nh_link_entities, conn)
 
-    sql_landing_zone= "SELECT * FROM landing_zone"
-    df_landing_zone = pd.read_sql_query(sql_landing_zone, conn)
 
-    sql_load_tables= "SELECT * FROM load_tables"
-    df_load_tables = pd.read_sql_query(sql_load_tables, conn)
-
-    sql_load_table_attributes= "SELECT * FROM load_table_attributes"
-    df_load_table_attributes = pd.read_sql_query(sql_load_table_attributes, conn)
 
     dfs = {
-        "source_data": df_source_data,
+        "source_tables": df_source_tables,
+        "source_table_attributes": df_source_table_attributes,
         "hub_entities": df_hub_entities,
         "link_entities": df_link_entities,
         "hub_satellites": df_hub_satellites,
         "link_satellites": df_link_satellites,
-        "nh_link_entities": df_nh_link_entities,        
-        "landing_zone": df_landing_zone,        
-        "load_tables": df_load_tables,        
-        "load_table_attributes": df_load_table_attributes,        
+        "nh_link_entities": df_nh_link_entities,             
     }
 
     db = sqlite3.connect(':memory:')
@@ -97,8 +90,8 @@ def main():
     hashdiff_naming = config.get("sqlite3", "hashdiff_naming")
 
     cursor = connect_sqlite()
-
-    cursor.execute("SELECT DISTINCT SOURCE_SYSTEM || '_' || SOURCE_OBJECT FROM source_data")
+    
+    cursor.execute("SELECT DISTINCT source_table_name FROM source_tables")
     results = cursor.fetchall()
     available_sources = []
 
@@ -109,12 +102,13 @@ def main():
     generated_timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     # Set default values for the arguments
-    default_tasks = ["landing_zone", "Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite", "Pit", "SNS", "RefHub", "yeditest"]
+    default_tasks = ["Landing", "Load"] 
+    #, "Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite", "Pit", "SNS", "RefHub", "yeditest"]
     #m default_tasks = ["Load"]
     # default_sources = [["ws_lieferung"]]
 #    default_tasks = [["Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite"]]
-    default_sources = [['misc_kategorie_termintreue','webshop_vereinspartner', 'webshop_kunde', 'roadshow_bestellung', 'webshop_bestellung', 'webshop_lieferadresse', 'webshop_lieferung', 'webshop_lieferdienst', 'webshop_wohnort', 'webshop_position', 'webshop_produkt', 'webshop_produktkategorie']]
-
+    #default_sources = [['misc_kategorie_termintreue','webshop_vereinspartner', 'webshop_kunde', 'roadshow_bestellung', 'webshop_bestellung', 'webshop_lieferadresse', 'webshop_lieferung', 'webshop_lieferdienst', 'webshop_wohnort', 'webshop_position', 'webshop_produkt', 'webshop_produktkategorie']]
+    default_sources = [['webshop_bestellung']]
 
     # Set a flag to indicate whether to use Gooey or not
     use_gooey = False
@@ -137,11 +131,12 @@ def main():
             help="Select the entities which you want to generate",
             action="append",
             widget="Listbox",
-            choices=["Stage", "Hub", "Satellite", "Link", "non_historized_Link", "landing_zone", "Load", "Status_Tracking_Satellite", "Pit", "yeditest"],
+            choices=["Source"] , #"Stage", "Hub", "Satellite", "Link", "non_historized_Link", "landing_zone", "Load", "Status_Tracking_Satellite", "Pit", "yeditest"],
             default=default_tasks,
             nargs="*",
             gooey_options={"height": 300},
         )
+        #
         parser.add_argument(
             "--Sources",
             help="Select the sources which you want to process",
@@ -163,34 +158,36 @@ def main():
     rdv_default_schema = "rdv"
     stage_default_schema = "stage"
 
-    for source in args.Sources[0]:
-        #print("source:" + source)
-        if "Stage" in todo:
-            stage.generate_stage(cursor,source, generated_timestamp, stage_default_schema, model_path, hashdiff_naming)
-        
-        if 'Hub' in todo: 
-            hub.generate_hub(cursor,source, generated_timestamp, rdv_default_schema, model_path)
-            
-        if 'Status_Tracking_Satellite' in todo:
-            st_satellite.generate_st_satellite(cursor, source, generated_timestamp, rdv_default_schema, model_path, hashdiff_naming)            
-
-        if 'Link' in todo: 
-            link.generate_link(cursor,source, generated_timestamp, rdv_default_schema, model_path)
-
-        if 'Satellite' in todo: 
-            satellite.generate_satellite(cursor, source, generated_timestamp, rdv_default_schema, model_path, hashdiff_naming)
-
-        if 'non_historized_Link' in todo: 
-            nh_link.generate_nh_link(cursor,source, generated_timestamp, rdv_default_schema, model_path)
+    for source_table_name in args.Sources[0]:
+        #print("source_table_name:" + source_table_name)
+        if 'Landing' in todo: 
+            landing.generate_landing(cursor, source_table_name, model_path, config)
 
         if 'Load' in todo: 
-            load.generate_load(cursor, source, model_path)
+            load.generate_load(cursor, source_table_name, model_path, config)
 
-        if 'landing_zone' in todo: 
-            landing_zone.generate_landing_zone(cursor, source, model_path)
+        if "Stage" in todo:
+            stage.generate_stage(cursor,source_table_name, generated_timestamp, stage_default_schema, model_path, hashdiff_naming)
+        
+        if 'Hub' in todo: 
+            hub.generate_hub(cursor,source_table_name, generated_timestamp, rdv_default_schema, model_path)
+            
+        if 'Status_Tracking_Satellite' in todo:
+            st_satellite.generate_st_satellite(cursor, source_table_name, generated_timestamp, rdv_default_schema, model_path, hashdiff_naming)            
+
+        if 'Link' in todo: 
+            link.generate_link(cursor,source_table_name, generated_timestamp, rdv_default_schema, model_path)
+
+        if 'Satellite' in todo: 
+            satellite.generate_satellite(cursor, source_table_name, generated_timestamp, rdv_default_schema, model_path, hashdiff_naming)
+
+        if 'non_historized_Link' in todo: 
+            nh_link.generate_nh_link(cursor,source_table_name, generated_timestamp, rdv_default_schema, model_path)
+
+
 
         if 'yeditest' in todo: 
-            yeditest.generate_yeditest(cursor,source, generated_timestamp, stage_default_schema, model_path, hashdiff_naming)
+            yeditest.generate_yeditest(cursor,source_table_name, generated_timestamp, stage_default_schema, model_path, hashdiff_naming)
     if 'Pit' in todo:
         pit.generate_pit(cursor, model_path)
         

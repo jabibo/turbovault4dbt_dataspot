@@ -1,0 +1,37 @@
+id: @@table_uuid
+name: @@table_name
+operation:
+  config:
+    insertStrategy: UNION
+    materializationSelector_name: table
+    selectDistinct: false
+    truncateBefore: false
+  database: ""
+  deployEnabled: true
+  description: ""
+  isMultisource: false
+  locationName: @@locationName
+  materializationType: @@materializationType
+  metadata:
+    appliedNodeTests: []
+    columns:
+@@columns
+    cteString: ""
+    enabledColumnTestIDs: []
+    sourceMapping:
+      - customSQL:
+          customSQL: ""
+        dependencies:
+          - locationName: @@source_locationName
+            nodeName: @@source_table_name
+        join:
+          joinCondition: FROM {{ ref('@@source_locationName', '@@source_table_name') }} "@@source_table_name"
+        name: @@table_name
+        noLinkRefs: []
+  name: @@table_name
+  overrideSQL: false
+  schema: ""
+  sqlType: @@node_template_id
+  type: sql
+type: Node
+version: 1

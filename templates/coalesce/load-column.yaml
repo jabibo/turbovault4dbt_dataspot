@@ -1,0 +1,17 @@
+      - acceptedValues:
+          strictMatch: true
+          values: []
+        appliedColumnTests: {}
+        columnReference:
+          columnCounter: @@column_uuid
+          stepCounter: @@table_uuid
+        config: {}
+        dataType: @@column_dataType
+        description: @@column_description
+        name: @@column_name
+        nullable: true
+        sourceColumnReferences:
+          - columnReferences:
+              - columnCounter: @@source_column_uuid
+                stepCounter: @@source_table_uuid
+            transform: @@transform

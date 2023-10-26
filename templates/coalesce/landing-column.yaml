@@ -1,0 +1,15 @@
+      - acceptedValues:
+          strictMatch: true
+          values: []
+        appliedColumnTests: {}
+        columnReference:
+          columnCounter: @@column_uuid
+          stepCounter: @@table_uuid
+        config: {}
+        dataType: @@column_dataType
+        defaultValue: ""
+        description: ""
+        name: @@column_name
+        nullable: false
+        primaryKey: false
+        uniqueKey: false
