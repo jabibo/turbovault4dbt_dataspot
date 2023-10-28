@@ -107,8 +107,8 @@ def main():
     #m default_tasks = ["Load"]
     # default_sources = [["ws_lieferung"]]
 #    default_tasks = [["Load", "Stage", "Hub", "Satellite", "Link", "non_historized_Link", "Status_Tracking_Satellite"]]
-    #default_sources = [['misc_kategorie_termintreue','webshop_vereinspartner', 'webshop_kunde', 'roadshow_bestellung', 'webshop_bestellung', 'webshop_lieferadresse', 'webshop_lieferung', 'webshop_lieferdienst', 'webshop_wohnort', 'webshop_position', 'webshop_produkt', 'webshop_produktkategorie']]
-    default_sources = [['webshop_bestellung']]
+    default_sources = [['misc_kategorie_termintreue','webshop_vereinspartner', 'webshop_kunde', 'roadshow_bestellung', 'webshop_bestellung', 'webshop_lieferadresse', 'webshop_lieferung', 'webshop_lieferdienst', 'webshop_wohnort', 'webshop_position', 'webshop_produkt', 'webshop_produktkategorie']]
+    # default_sources = [['webshop_bestellung']]
 
     # Set a flag to indicate whether to use Gooey or not
     use_gooey = False

@@ -11,12 +11,6 @@ def create_uuid(input_string:str):
   m.update(input_string.encode('utf-8'))
   return str(uuid.UUID(m.hexdigest()))
 
-def replace_column(columns, transform_string, table_name):
-  out = ""
-  for col in columns:
-    if transform_string.find(col[0]) and not transform_string.find('"') :
-      out = '"' + transform_string.replace(col[0], '\"' + table_name + '\".\"' + str(col[0]).upper() + '\"') + '"'
-  return out
 
 def get_columns(cursor, source_table_name, landing_table_name, landing_table_id, target_table_id, source_type, config):
   command_tmp = ""
@@ -38,7 +32,7 @@ def get_columns(cursor, source_table_name, landing_table_name, landing_table_id,
   columns = cursor.fetchall()
 
   for columns_row in columns:
-    column_name = str(columns_row[0])
+    column_name = str(columns_row[0]).upper()
     column_dataType = str(columns_row[1])
     column_type = str(columns_row[3])
     column_order = str(columns_row[4])
@@ -50,22 +44,26 @@ def get_columns(cursor, source_table_name, landing_table_name, landing_table_id,
       column_transform = ext_json_column_template.replace("@@landing_table_name", landing_table_name)
       column_transform = column_transform.replace("@@column_order", column_order)
       landing_table_attribute_id = landing_table_id + '__' + str('VALUE')
+      landing_table_attribute_uuid = create_uuid(landing_table_attribute_id)
+      landing_table_uuid = create_uuid(landing_table_id)
     elif column_type in ('additional_columns','default_columns'):
-      landing_table_attribute_id = ''
-      landing_table_id = ''
-      column_transform = str(columns_row[5])
+      landing_table_attribute_uuid = '"0"'
+      landing_table_uuid = '"0"'
+      column_transform = '"' + str(columns_row[5]).replace('@@source_table', landing_table_name).replace('"', '\\"').upper() + '"'
     else:
       column_transform = str(columns_row[5])
       landing_table_attribute_id = landing_table_id + '__' + column_name.upper()
+      landing_table_attribute_uuid = create_uuid(landing_table_attribute_id)
+      landing_table_uuid = create_uuid(landing_table_id)
 
     command = command_tmp.replace("@@column_uuid",create_uuid(column_id))
     command = command.replace("@@table_uuid",create_uuid(target_table_id))
     command = command.replace("@@column_name",column_name)
     command = command.replace("@@column_dataType",column_dataType)
     command = command.replace("@@column_description",column_description)    
-    command = command.replace("@@source_column_uuid",create_uuid(landing_table_attribute_id))    
-    command = command.replace("@@source_table_uuid",create_uuid(landing_table_id))    
-    command = command.replace("@@transform",column_transform)    
+    command = command.replace("@@source_column_uuid",landing_table_attribute_uuid)    
+    command = command.replace("@@source_table_uuid",landing_table_uuid)    
+    command = command.replace("@@transform", column_transform)
     return_value = return_value + command
   return return_value
 
