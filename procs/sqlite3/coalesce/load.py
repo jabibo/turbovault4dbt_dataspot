@@ -11,6 +11,13 @@ def create_uuid(input_string:str):
   m.update(input_string.encode('utf-8'))
   return str(uuid.UUID(m.hexdigest()))
 
+def replace_column(columns, transform_string, table_name):
+  out = ""
+  for col in columns:
+    if transform_string.find(col[0]) and not transform_string.find('"') :
+      out = '"' + transform_string.replace(col[0], '\"' + table_name + '\".\"' + str(col[0]).upper() + '\"') + '"'
+  return out
+
 def get_columns(cursor, source_table_name, landing_table_name, landing_table_id, target_table_id, source_type, config):
   command_tmp = ""
   with open(os.path.join(".","templates","coalesce", "load-column.yaml"),"r") as f:
