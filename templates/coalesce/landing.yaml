@@ -1,3 +1,4 @@
+fileVersion: 1
 id: @@landing_table_uuid
 name: @@landing_table_name
 operation:
@@ -5,7 +6,6 @@ operation:
   dataset: ""
   deployEnabled: true
   description: ""
-  locationID: ""
   locationName: @@landing_location
   metadata:
     columns:
@@ -18,4 +18,3 @@ operation:
   table: @@landing_table_name
   type: sourceInput
 type: Node
-version: 1

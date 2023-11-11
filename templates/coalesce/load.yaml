@@ -1,3 +1,4 @@
+fileVersion: 1
 id: @@table_uuid
 name: @@table_name
 operation:
@@ -19,7 +20,8 @@ operation:
     cteString: ""
     enabledColumnTestIDs: []
     sourceMapping:
-      - customSQL:
+      - aliases: {}
+        customSQL:
           customSQL: ""
         dependencies:
           - locationName: @@source_locationName
@@ -34,4 +36,3 @@ operation:
   sqlType: @@node_template_id
   type: sql
 type: Node
-version: 1

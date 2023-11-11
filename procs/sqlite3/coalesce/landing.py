@@ -4,7 +4,7 @@ import os
 import procs.sqlite3.helper as helper
 import hashlib
 import uuid 
-snowflake_external_table_surrogate_attributes = [['', 'VALUE', 'VARIANT'], ['','FILENAMEDATE', 'STRING'], ['','METADATA$FILE_ROW_NUMBER', 'NUMBER(38,0)']]
+snowflake_external_table_surrogate_attributes = [['', 'VALUE', 'VARIANT'], ['','FILENAMEDATE', 'STRING'], ['','METADATA$FILE_ROW_NUMBER', 'STRING']]
 def create_uuid(input_string:str):
 
   m = hashlib.md5()
@@ -21,7 +21,7 @@ def get_source_attributes(cursor, source_table_name, target_table_id, source_typ
     query = f"""SELECT 
                   source_table_attribute_id
                 , source_attribute_name
-                , dataType
+                , data_type
                 , format
               FROM source_table_attributes
               WHERE source_table_name = '{source_table_name}'"""
@@ -64,6 +64,7 @@ def generate_landing(cursor, source_table_name, model_path, config):
     prefix = config.get("landing", "PREFIX")
   else:
     prefix = config.get("landing", "PREFIX_EXT")
+
  
   landing_location = str(config.get("landing", "LOCATION")).upper()
   landing_table_name = str(prefix + '_' + source_table_name).upper()
