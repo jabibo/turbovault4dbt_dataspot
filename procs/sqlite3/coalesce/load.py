@@ -94,18 +94,18 @@ def get_column_definition_check(target_table_id, column_name, column_type, sourc
   return column_id, column_name_check, column_description, landing_table_attribute_uuid, landing_table_uuid, column_transform
 
   command = command.replace("@@source_table_uuid",landing_table_uuid)    
-def get_key_check(target_table_id, landing_table_id, landing_table_name, key_check_list:list):
+def get_dublette_check(target_table_id, landing_table_id, landing_table_name, key_check_list:list):
   command_tmp = ""
   with open(os.path.join(".","templates","coalesce", "load-column.yaml"),"r") as f:
     command_tmp = f.read()
   f.close()
-  column_name = 'IS_KEY_CHECK_OK'
+  column_name = 'IS_DUBLETTE_CHECK_OK'
   column_dataType = 'BOOLEAN'
   column_description = '""'
   column_id = target_table_id + '__' + column_name
   landing_table_attribute_uuid = '"0"'
   landing_table_uuid = create_uuid(landing_table_id)
-  print(str(key_check_list))
+  #print(str(key_check_list))
   if key_check_list != []:
     column_list_str = ""
     for column in key_check_list:
@@ -115,7 +115,7 @@ def get_key_check(target_table_id, landing_table_id, landing_table_name, key_che
   else: 
     column_transform = 'TRUE'
 
-  print(column_transform)
+  #print(column_transform)
   
   command = command_tmp.replace("@@column_uuid",create_uuid(column_id))
   command = command.replace("@@table_uuid",create_uuid(target_table_id))
@@ -192,7 +192,7 @@ def get_columns(cursor, source_table_name, landing_table_name, landing_table_id,
       command = command.replace("@@transform", '"' + column_transform + '"')
       return_value = return_value + command
 
-  command = get_key_check(target_table_id=target_table_id
+  command = get_dublette_check(target_table_id=target_table_id
                           , landing_table_id=landing_table_id
                           , landing_table_name=landing_table_name
                           , key_check_list= key_check_typed_list
@@ -233,7 +233,7 @@ def generate_load(cursor, source_table_name, model_path, config):
   load_node_template_id = str(config.get("load", "NODE_TEMPLATE_ID")).upper()
 
 
-  print('generate_load (step1): ' + load_table_name)
+  #print('generate_load (step1): ' + load_table_name)
   model_path = model_path
 
   with open(os.path.join(".","templates","coalesce", "load.yaml"),"r") as f:

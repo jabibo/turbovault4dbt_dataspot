@@ -35,7 +35,7 @@ def get_source_attributes(cursor, source_table_name, target_table_id, source_typ
     landing_table_attribute_id = target_table_id + '__' + str(source_columns_row[1])
     column_name = str(source_columns_row[1])
     column_dataType = str(source_columns_row[2])
-    print(landing_table_attribute_id)
+    #print(landing_table_attribute_id)
     command = command_tmp.replace("@@column_uuid",create_uuid(landing_table_attribute_id))
     command = command.replace("@@table_uuid",create_uuid(target_table_id))
     command = command.replace("@@column_name",column_name)
