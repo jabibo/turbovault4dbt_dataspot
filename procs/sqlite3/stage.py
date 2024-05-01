@@ -125,29 +125,29 @@ def gen_hashed_columns(cursor,source, hashdiff_naming):
   results = cursor.fetchall()
   for hashkey in results:
   
-    hashkey_name = hashkey[0]
-    bk_list = hashkey[1].split(",")
+    hashkey_name = str(hashkey[0]).upper()
+    bk_list = str(hashkey[1]).upper().split(",")
 
     command = command + f"\t{hashkey_name}:\n"
     if hashkey[2]: 
       command = command + "\t\tis_hashdiff: true\n\t\tcolumns:\n"
 
       if hashkey[3]=='Type 1': 
-        bk_list.append(hashkey[4])
+        bk_list.append(str(hashkey[4]).upper())
 
       for bk in bk_list:
-        command = command + f"\t\t\t- {bk}\n"  
+        command = command + f"\t\t\t- {str(bk).upper()}\n"  
     else:
       for bk in bk_list:
-        command = command + f"\t\t- {bk}\n"
+        command = command + f"\t\t- {str(bk).upper()}\n"
   
     if hashkey[3]=='Type 1' and not hashkey[2]: 
-      hashkey_name = hashkey[0].replace('hk_', 'hke_')
-      bk_list = (hashkey[1].split(","))
-      bk_list.append(hashkey[4])
+      hashkey_name = str(hashkey[0].replace('hk_', 'hke_')).upper()
+      bk_list = str(hashkey[1]).upper().split(",")
+      bk_list.append(str(hashkey[4]).upper())
       command = command + f"\t{hashkey_name}:\n"
       for bk in bk_list:
-          command = command + f"\t\t- {bk}\n"
+          command = command + f"\t\t- {str(bk).upper()}\n"
 
   return command
 
@@ -182,14 +182,14 @@ def gen_multi_active_config(cursor,source):
     if any(item is None for item in multi_active_config):
         continue    
     command += "multi_active_config:\n\t\tmulti_active_key:\n"    
-    main_hashkey_column = multi_active_config[2]
-    multi_active_key_list = multi_active_config[3].split(",")
+    main_hashkey_column = str(multi_active_config[2]).upper()
+    multi_active_key_list = str(multi_active_config[3]).upper().split(",")
 
 
     for multi_active_key in multi_active_key_list:
-      command += f"\t\t\t- {multi_active_key}\n"  
+      command += f"\t\t\t- {str(multi_active_key).upper()}\n"  
 
-    command +=  f"\t\tmain_hashkey_column: {main_hashkey_column}\n"
+    command +=  f"\t\tmain_hashkey_column: {str(main_hashkey_column).upper()}\n"
     
   # print(command)
   
@@ -249,14 +249,14 @@ def gen_derived_columns(cursor,source):
   cursor.execute(query)
   results = cursor.fetchall()
   for derived_columns in results:
-    target_column_name = derived_columns[1]
+    target_column_name = str(derived_columns[1]).upper()
     transformation_rule = derived_columns[2]
-    command = command + f"\t\t{target_column_name}:\n"
+    command = command + f"\t\t{str(target_column_name).upper()}:\n"
     if transformation_rule:
-      source_column_list = derived_columns[0]
-      command = command + f"\t\t\tvalue: {source_column_list}"      
+      source_column_list = str(derived_columns[0]).upper()
+      command = command + f"\t\t\tvalue: {str(source_column_list).upper()}"      
     else:
-      source_column_list = derived_columns[0].split(",")
+      source_column_list = str(derived_columns[0]).upper().split(",")
       for i, source_column in enumerate(source_column_list):
           if i == 0:
             command = command + f"\t\t\tvalue: {source_column}"
@@ -329,8 +329,8 @@ def generate_stage(cursor, source,generated_timestamp,stage_default_schema, mode
     source_schema_name = row[0]
     source_table_name = row[1] #.replace('_ws_', '_webshop_').replace('_rs_', '_roadshow_')
     target_table_name = row[1].replace('load', 'stg') 
-    rs = row[2]
-    ldts = row[3]
+    rs = str(row[2]).upper()
+    ldts = str(row[3]).upper()
     timestamp = generated_timestamp
     business_object = row[4]
     condition = "where is_check_ok or rsrc ='SYSTEM'"

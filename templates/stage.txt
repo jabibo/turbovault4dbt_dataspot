@@ -15,11 +15,11 @@ hashed_columns:
 
 derived_columns:
 @@derived_columns
-    cdts:
+    CDTS:
       value: {{var("local_timestamp")}}
       datatype: 'TIMESTAMP'
-    edts:      
-      value: edts_in
+    EDTS:      
+      value: EDTS_IN
       datatype: 'DATE'
 
 rsrc: '@@RecordSource' 
